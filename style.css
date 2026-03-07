@@ -1,0 +1,117 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #050505;
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    touch-action: none;
+    color: white;
+}
+
+canvas {
+    background: #000;
+    box-shadow: 0 0 30px rgba(255,0,0,0.1);
+    cursor: crosshair;
+    touch-action: none;
+    position: absolute;
+    z-index: 1;
+}
+
+/* UI Layers */
+#gameUI {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: #00ffcc;
+    pointer-events: none;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0,255,204,0.8);
+    z-index: 10;
+    display: none;
+}
+
+#powerUI {
+    color: #ff3300;
+    font-size: 18px;
+    margin-top: 5px;
+    display: none;
+    text-shadow: 0 0 10px #ff0000;
+}
+
+/* Screens */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 20;
+}
+
+.screen-box {
+    background: rgba(10, 20, 20, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    border: 3px solid #00ffcc;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 0 30px rgba(0,255,204,0.3);
+}
+
+h1 { color: #00ffcc; margin-top: 0; text-shadow: 0 0 15px rgba(0,255,204,0.5); }
+h2 { color: #ffff00; margin-top: 0; }
+
+.stat-text { font-size: 20px; margin: 10px 0; font-weight: bold; }
+.gp-text { color: #ffff00; font-size: 24px; text-shadow: 0 0 10px rgba(255,255,0,0.5); }
+
+button {
+    padding: 15px 30px;
+    font-size: 18px;
+    cursor: pointer;
+    pointer-events: auto;
+    background: #00ffcc;
+    color: #000;
+    border: none;
+    border-radius: 50px;
+    font-weight: bold;
+    transition: 0.2s;
+    font-family: inherit;
+}
+
+button:hover { transform: scale(1.05); box-shadow: 0 0 15px #00ffcc; }
+button:disabled { background: #555; color: #888; cursor: not-allowed; box-shadow: none; transform: none; }
+
+.shop-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.1);
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    text-align: left;
+}
+
+.shop-info { flex: 1; padding-right: 10px; }
+.shop-title { font-weight: bold; font-size: 16px; color: #00ffcc; }
+.shop-desc { font-size: 10px; color: #ddd; display: block; margin-top: 4px; line-height: 1.2; }
+.shop-btn { padding: 8px 12px; font-size: 14px; width: 110px; flex-shrink: 0; }
+
+.btn-group-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin-top: 30px;
+}
+.btn-group-vertical button { width: 220px; margin: 0; }

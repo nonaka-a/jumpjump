@@ -3,6 +3,7 @@ const SAVE_KEY = 'lineball_savedata_v3';
 let saveData = {
     gp: 0,
     highScore: 0,
+    soundEnabled: true,
     upgrades: {
         jump: 0,
         booster: 0,
@@ -87,6 +88,7 @@ function loadData() {
             const parsed = JSON.parse(saved);
             saveData.gp = parsed.gp || 0;
             saveData.highScore = parsed.highScore || 0;
+            saveData.soundEnabled = parsed.soundEnabled !== undefined ? parsed.soundEnabled : true;
             if (parsed.upgrades) {
                 for (let key in UPGRADE_DATA) {
                     if (parsed.upgrades[key] !== undefined) {
@@ -106,6 +108,7 @@ const ctx = canvas.getContext('2d');
 function changeState(state) {
     document.getElementById('titleScreen').style.display = 'none';
     document.getElementById('shopScreen').style.display = 'none';
+    document.getElementById('settingsScreen').style.display = 'none';
     document.getElementById('resultScreen').style.display = 'none';
     document.getElementById('gameUI').style.display = 'none';
     gameActive = false;
@@ -118,6 +121,9 @@ function changeState(state) {
     } else if (state === 'shop') {
         document.getElementById('shopScreen').style.display = 'flex';
         updateShopUI();
+    } else if (state === 'settings') {
+        document.getElementById('settingsScreen').style.display = 'flex';
+        updateSettingsUI();
     } else if (state === 'play') {
         document.getElementById('gameUI').style.display = 'block';
         initGame();
@@ -179,6 +185,44 @@ function buyUpgrade(key) {
     }
 }
 
+function updateSettingsUI() {
+    const btn = document.getElementById('soundToggleBtn');
+    btn.textContent = `SOUND: ${saveData.soundEnabled ? 'ON' : 'OFF'}`;
+    btn.style.background = saveData.soundEnabled ? '#00ffcc' : '#555';
+}
+
+function toggleSound() {
+    saveData.soundEnabled = !saveData.soundEnabled;
+    saveGameData();
+    updateSettingsUI();
+    if (saveData.soundEnabled) playSound('energy');
+}
+
+function confirmReset() {
+    if (window.confirm("本当にデータをリセットしますか？\n(ハイスコア、GP、アップグレードがすべて初期化されます)")) {
+        resetData();
+    }
+}
+
+function resetData() {
+    saveData = {
+        gp: 0,
+        highScore: 0,
+        soundEnabled: saveData.soundEnabled, // 音量設定は維持する
+        upgrades: {
+            jump: 0,
+            booster: 0,
+            aura: 0,
+            pierce: 0,
+            sheet: 0,
+            multiplier: 0
+        }
+    };
+    saveGameData();
+    alert("データをリセットしました。");
+    changeState('title');
+}
+
 // --- 画像・音声 ---
 const ballImage = new Image(); ballImage.src = 'maimai.png';
 const bgImage = new Image(); bgImage.src = 'BG.png';
@@ -197,6 +241,7 @@ async function loadSound(name, url) {
     } catch (e) { }
 }
 function playSound(name) {
+    if (!saveData.soundEnabled) return;
     if (!soundBuffers[name] || audioCtx.state === 'suspended') return;
     const source = audioCtx.createBufferSource();
     source.buffer = soundBuffers[name];

@@ -23,6 +23,20 @@
         <div class="btn-group-vertical">
             <button onclick="changeState('play')" style="background: #ff3366; color: white;">JUMP (START)</button>
             <button onclick="changeState('shop')">SHOP</button>
+            <button onclick="changeState('settings')">SETTINGS</button>
+        </div>
+    </div>
+</div>
+
+<!-- 設定画面 -->
+<div id="settingsScreen" class="screen" style="display: none;">
+    <div class="screen-box">
+        <h2>SETTINGS</h2>
+        
+        <div class="btn-group-vertical" style="margin-top: 20px;">
+            <button id="soundToggleBtn" onclick="toggleSound()">SOUND: ON</button>
+            <button onclick="confirmReset()" style="background: #666; color: #fff;">RESET DATA</button>
+            <button onclick="changeState('title')" style="margin-top: 20px;">BACK TO TITLE</button>
         </div>
     </div>
 </div>

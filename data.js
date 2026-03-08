@@ -61,6 +61,18 @@ const UPGRADE_DATA = {
             "ブルーシートは最大強化されています"
         ]
     },
+    yellowGiant: {
+        name: "Yellow Giant",
+        nameJa: "イエロージャイアント",
+        costs: [4000, 10000, 20000],
+        max: 3,
+        descs: [
+            "低確率で黄色いアイテムが出現。取ると巨大化し次のライン反射で300m一気に跳ぶ",
+            "さらに巨大化し、600mの超ジャンプが可能になる",
+            "ほぼ横幅いっぱいに巨大化し、驚異の1000mジャンプを放つ",
+            "イエロージャイアントは最大強化です"
+        ]
+    },
     multiplier: {
         name: "GP Multiplier",
         nameJa: "GP マルチプライヤー",
@@ -77,6 +89,7 @@ const UPGRADE_DATA = {
 const I18N = {
     altitude: { en: "ALTITUDE:", ja: "高度:" },
     redAura: { en: "RED AURA:", ja: "レッドオーラ:" },
+    yellowGiant: { en: "YELLOW GIANT!", ja: "イエロージャイアント!" },
     highScore: { en: "HIGH SCORE:", ja: "ハイスコア:" },
     totalGp: { en: "TOTAL GP:", ja: "トータル GP:" },
     jumpStart: { en: "JUMP (START)", ja: "ジャンプ(スタート)" },

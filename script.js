@@ -11,6 +11,7 @@ let saveData = {
         aura: 0,
         pierce: 0,
         sheet: 0,
+        yellowGiant: 0,
         multiplier: 0
     }
 };
@@ -132,7 +133,7 @@ function updateShopUI() {
         const cost = isMax ? 0 : info.costs[lv];
 
         const name = lang === 'ja' ? (info.nameJa || info.name) : info.name;
-        const buyText = lang === 'ja' ? 'バイ: ' : 'Buy: ';
+        const buyText = lang === 'ja' ? '購入: ' : 'Buy: ';
         const maxText = lang === 'ja' ? 'マックス' : 'MAX';
 
         const itemEl = document.createElement('div');
@@ -209,6 +210,7 @@ function resetData() {
             aura: 0,
             pierce: 0,
             sheet: 0,
+            yellowGiant: 0,
             multiplier: 0
         }
     };
@@ -354,6 +356,11 @@ let ball, lines, boosters, items, blocks, particles, speedLines, lasers, ghosts,
 let isDrawing, startPoint, currentPoint, maxHeight, gameActive, cameraY;
 let boostEffectTimer, powerModeTimer, nextGateAlt, nextBlockY, nextSingleBoosterY, currentSheetCount;
 let fadeToWhite = 0;
+let yellowItems = [];      // 黄色いジャイアントアイテム
+let yellowGiantMode = false;  // 巨大化状態フラグ
+let yellowGiantJumpDist = 0;  // アクティブ時のジャンプ距離(m)
+let yellowGiantJumping = false;  // 高速上昇中フラグ
+let yellowGiantRemainingY = 0;   // 上昇残り距離(px)
 
 const config = {
     ballRadius: 20, gravity: 0.22, maxSpeed: 20, baseBounce: 9, powerMultiplier: 280,
@@ -372,13 +379,15 @@ function initGame() {
         va: 0,
         firstFall: true
     };
-    lines = []; boosters = []; items = []; blocks = []; particles = []; speedLines = []; lasers = []; ghosts = [];
+    lines = []; boosters = []; items = []; blocks = []; particles = []; speedLines = []; lasers = []; ghosts = []; yellowItems = [];
     isDrawing = false; startPoint = null; currentPoint = null;
     maxHeight = 0; cameraY = 0; boostEffectTimer = 0; powerModeTimer = 0; ghostTimer = 0; fadeToWhite = 0;
     nextGateAlt = 500; nextBlockY = -800; nextSingleBoosterY = -300;
     currentSheetCount = saveData.upgrades.sheet || 0;
+    yellowGiantMode = false; yellowGiantJumpDist = 0; yellowGiantJumping = false; yellowGiantRemainingY = 0;
     document.getElementById('heightScore').textContent = "0";
     document.getElementById('powerUI').style.display = 'none';
+    document.getElementById('yellowGiantUI').style.display = 'none';
     gameActive = true;
     requestAnimationFrame(gameLoop);
 }
@@ -392,6 +401,7 @@ function spawnBooster(yTarget, isGate = false) {
     }
 }
 function spawnItem(yTarget) { items.push({ x: PLAY_X + Math.random() * (PLAY_W - 100) + 50, y: yTarget, radius: 35, active: true }); }
+function spawnYellowItem(yTarget) { yellowItems.push({ x: PLAY_X + Math.random() * (PLAY_W - 100) + 50, y: yTarget, radius: 30, active: true }); }
 function spawnBlocks(yTarget, currentAlt) {
     const maxDensity = Math.min(4, Math.floor(currentAlt / 1000) + 1);
     const count = Math.floor(Math.random() * maxDensity) + 1;
@@ -451,6 +461,67 @@ window.addEventListener('touchend', () => {
 });
 
 function update() {
+    // ===== イエロージャイアント高速上昇中は専用処理 =====
+    if (yellowGiantJumping) {
+        const jumpSpeed = 32; // px/frame
+        ball.vy = -jumpSpeed;
+        ball.vx *= 0.92;
+        ball.y += ball.vy;
+        ball.x += ball.vx;
+        ball.angle += 0.15;
+        yellowGiantRemainingY -= jumpSpeed;
+
+        // 黄色いスピードパーティクル
+        for (let i = 0; i < 6; i++) {
+            particles.push(new Particle(
+                ball.x + (Math.random() - 0.5) * 50,
+                ball.y + Math.random() * 30,
+                Math.random() > 0.4 ? '#ffff00' : '#ffcc00',
+                (Math.random() - 0.5) * 6, jumpSpeed * 0.4 + Math.random() * 6,
+                0.04, 4
+            ));
+        }
+        // 黄色いスピードライン
+        if (Math.random() > 0.2) speedLines.push({ x: PLAY_X + Math.random() * PLAY_W, y: -50, h: 100 + Math.random() * 150, v: 35 + Math.random() * 20 });
+
+        // カメラ高速追従
+        const tY = ball.y - canvas.height * 0.45;
+        if (tY < cameraY) cameraY += (tY - cameraY) * 0.5;
+
+        // 高度更新
+        const cAlt = Math.floor(Math.max(0, (canvas.height - 100 - ball.y) / 20));
+        if (cAlt > maxHeight && maxHeight < 10000) {
+            maxHeight = Math.min(cAlt, 10000);
+            document.getElementById('heightScore').textContent = maxHeight;
+            if (maxHeight >= 5000 && currentBgmName === 'bgm') fadeToBGM('bgm2', 3.0);
+        }
+
+        // ゴール判定
+        if (maxHeight >= 10000) {
+            fadeToWhite += 0.005;
+            if (fadeToWhite >= 1.5) { changeState('result'); fadeToWhite = 0; }
+        }
+
+        // 上昇完了
+        if (yellowGiantRemainingY <= 0) {
+            yellowGiantJumping = false;
+            yellowGiantMode = false;
+            yellowGiantJumpDist = 0;
+            ball.vy = -config.maxSpeed;
+            ball.firstFall = false;
+            document.getElementById('yellowGiantUI').style.display = 'none';
+        }
+
+        // パーティクル・スピードライン更新
+        for (let i = particles.length - 1; i >= 0; i--) { particles[i].update(); if (particles[i].life <= 0) particles.splice(i, 1); }
+        speedLines.forEach((sl, idx) => { sl.y += sl.v; });
+        speedLines = speedLines.filter(sl => sl.y <= canvas.height);
+
+        if (ball.y > cameraY + canvas.height + 50 && fadeToWhite === 0) changeState('result');
+        return; // 通常の物理演算・衝突判定をスキップ
+    }
+    // =====================================================
+
     const grav = ball.firstFall ? config.gravity * 0.4 : config.gravity;
     ball.vy += grav; ball.x += ball.vx; ball.y += ball.vy;
     if (ball.vy < 0) ball.firstFall = false;
@@ -486,6 +557,12 @@ function update() {
         if (currentAlt >= appearAlt && Math.random() < prob) spawnItem(spawnY);
     }
 
+    // イエロージャイアントアイテムのスポーン（低確率）
+    const ygLv = saveData.upgrades.yellowGiant;
+    if (ygLv > 0 && spawnActive && !yellowGiantMode) {
+        if (Math.random() < 0.0006) spawnYellowItem(spawnY);
+    }
+
     if (cameraY < nextBlockY && spawnActive) {
         spawnBlocks(nextBlockY - 200, currentAlt);
         let interval = 800 - Math.floor(currentAlt / 1000) * 150;
@@ -497,6 +574,20 @@ function update() {
         powerModeTimer -= 1 / 60; document.getElementById('powerUI').style.display = 'block'; document.getElementById('timer').textContent = Math.ceil(powerModeTimer);
         for (let i = 0; i < 3; i++) particles.push(new Particle(ball.x + (Math.random() - 0.5) * 40, ball.y + (Math.random() - 0.5) * 40, Math.random() > 0.4 ? '#ff0000' : '#ffaa00', (Math.random() - 0.5) * 3, -Math.random() * 8, 0.05, 4));
         if (powerModeTimer <= 0) document.getElementById('powerUI').style.display = 'none';
+    }
+
+    // イエロージャイアントモード中のオーラパーティクル
+    if (yellowGiantMode) {
+        for (let i = 0; i < 4; i++) {
+            const ygLv2 = saveData.upgrades.yellowGiant;
+            const ygR = ygLv2 === 3 ? config.ballRadius * 11 : (ygLv2 === 2 ? config.ballRadius * 7 : config.ballRadius * 3.5);
+            particles.push(new Particle(
+                ball.x + (Math.random() - 0.5) * ygR * 2,
+                ball.y + (Math.random() - 0.5) * ygR * 2,
+                Math.random() > 0.4 ? '#ffff00' : '#ffcc00',
+                (Math.random() - 0.5) * 3, -Math.random() * 5, 0.05, 4
+            ));
+        }
     }
 
     if (ball.vy < -config.speedLineThreshold && Math.random() > 0.3) {
@@ -540,6 +631,24 @@ function update() {
         }
     });
     items.forEach(it => { if (it.active && Math.sqrt((ball.x - it.x) ** 2 + (ball.y - it.y) ** 2) < (config.ballRadius + it.radius)) { const aLv = saveData.upgrades.aura; powerModeTimer = (aLv === 3) ? 15 : (aLv === 2 ? 10 : 5); it.active = false; playSound('energy'); for (let i = 0; i < 60; i++) particles.push(new Particle(it.x, it.y, '#ff0000', (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, 0.02, 5)); } });
+
+    // 黄色いアイテムの取得判定
+    yellowItems.forEach(it => {
+        if (it.active && Math.sqrt((ball.x - it.x) ** 2 + (ball.y - it.y) ** 2) < (config.ballRadius + it.radius)) {
+            it.active = false;
+            yellowGiantMode = true;
+            const ygLv = saveData.upgrades.yellowGiant;
+            yellowGiantJumpDist = ygLv === 3 ? 1000 : (ygLv === 2 ? 600 : 300);
+            playSound('energy');
+            const lang = saveData.language || 'en';
+            document.getElementById('yellowGiantUI').style.display = 'block';
+            document.getElementById('yellowGiantUI').textContent = I18N.yellowGiant[lang];
+            for (let i = 0; i < 80; i++) {
+                particles.push(new Particle(it.x, it.y, Math.random() > 0.4 ? '#ffff00' : '#ffcc00', (Math.random() - 0.5) * 35, (Math.random() - 0.5) * 35, 0.02, 6));
+            }
+        }
+    });
+    yellowItems = yellowItems.filter(it => it.y < cameraY + canvas.height + 100);
 
     if (currentSheetCount > 0 && ball.y > cameraY + canvas.height - 40) {
         ball.vy = -18; ball.y = cameraY + canvas.height - 45; currentSheetCount--; playSound('energy');
@@ -655,9 +764,22 @@ function update() {
 
     for (let i = lines.length - 1; i >= 0; i--) {
         if (checkCollision(ball, lines[i])) {
-            reflectBall(ball, lines[i]); lines.splice(i, 1);
-            playSound(powerModeTimer > 0 ? 'flameburst' : 'jump');
-            if (powerModeTimer > 0) for (let j = 0; j < 25; j++) particles.push(new Particle(ball.x, ball.y, '#ff0000', (Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, 0.04, 3));
+            if (yellowGiantMode && !yellowGiantJumping) {
+                // イエロージャイアント発動：高速上昇開始
+                lines.splice(i, 1);
+                yellowGiantJumping = true;
+                yellowGiantRemainingY = yellowGiantJumpDist * 20; // 1m=20px
+                ball.firstFall = false;
+                playSound('flameburst');
+                // 発動エフェクト
+                for (let j = 0; j < 60; j++) {
+                    particles.push(new Particle(ball.x, ball.y, Math.random() > 0.5 ? '#ffff00' : '#ffffff', (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, 0.025, 6));
+                }
+            } else {
+                reflectBall(ball, lines[i]); lines.splice(i, 1);
+                playSound(powerModeTimer > 0 ? 'flameburst' : 'jump');
+                if (powerModeTimer > 0) for (let j = 0; j < 25; j++) particles.push(new Particle(ball.x, ball.y, '#ff0000', (Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, 0.04, 3));
+            }
         } else if (lines[i].y1 > cameraY + canvas.height + 100) lines.splice(i, 1);
     }
     boosters = boosters.filter(b => b.y < cameraY + canvas.height + 100);
@@ -751,7 +873,7 @@ function draw() {
         ctx.strokeStyle = '#00ccff'; ctx.lineWidth = 20; ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 100) * 0.2;
         ctx.beginPath(); ctx.moveTo(PLAY_X, canvas.height - 30); ctx.lineTo(PLAY_X + PLAY_W, canvas.height - 30); ctx.stroke(); ctx.globalAlpha = 1.0;
     }
-    ctx.strokeStyle = powerModeTimer > 0 ? 'rgba(255, 30, 0, 0.7)' : 'rgba(0, 204, 255, 0.4)'; ctx.lineWidth = 3;
+    ctx.strokeStyle = yellowGiantJumping ? 'rgba(255, 220, 0, 0.8)' : (powerModeTimer > 0 ? 'rgba(255, 30, 0, 0.7)' : 'rgba(0, 204, 255, 0.4)'); ctx.lineWidth = yellowGiantJumping ? 4 : 3;
     speedLines.forEach(sl => { ctx.beginPath(); ctx.moveTo(sl.x, sl.y); ctx.lineTo(sl.x, sl.y + sl.h); ctx.stroke(); });
     ctx.strokeStyle = 'rgba(0, 204, 255, 0.1)'; ctx.lineWidth = 1;
     const gStep = 50; const sGrid = Math.floor(cameraY / gStep) * gStep;
@@ -834,6 +956,29 @@ function draw() {
         ctx.strokeStyle = bk.type === 'white' ? 'rgba(255, 255, 255, 0.4)' : (bk.type === 'yellow' ? 'rgba(255, 255, 0, 0.2)' : (bk.type === 'red' ? 'rgba(255, 100, 100, 0.2)' : 'rgba(255, 255, 255, 0.1)'));
     });
     items.forEach(it => { if (!it.active) return; ctx.fillStyle = '#ff3300'; ctx.shadowBlur = 40; ctx.shadowColor = '#ff0000'; const p = Math.sin(Date.now() / 120) * 10; ctx.beginPath(); ctx.arc(it.x, it.y, it.radius + p, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(it.x, it.y, (it.radius + p) * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; });
+    // 黄色いジャイアントアイテムの描画
+    yellowItems.forEach(it => {
+        if (!it.active) return;
+        const p = Math.sin(Date.now() / 90) * 10;
+        const r = it.radius + p;
+        // 外側グロー
+        ctx.shadowBlur = 60; ctx.shadowColor = '#ffee00';
+        // 本体（黄色）
+        ctx.fillStyle = '#ffdd00';
+        ctx.beginPath(); ctx.arc(it.x, it.y, r, 0, Math.PI * 2); ctx.fill();
+        // 内側（白）
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(it.x, it.y, r * 0.42, 0, Math.PI * 2); ctx.fill();
+        // 外周リング
+        ctx.strokeStyle = 'rgba(255, 240, 0, 0.7)';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(it.x, it.y, r + 14, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255, 200, 0, 0.35)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(it.x, it.y, r + 24, 0, Math.PI * 2); ctx.stroke();
+        ctx.shadowBlur = 0;
+    });
     boosters.forEach(b => {
         if (!b.active) return;
         ctx.strokeStyle = b.isGate ? '#ffffff' : '#00ffff'; ctx.lineWidth = 6; ctx.shadowBlur = 15; ctx.shadowColor = ctx.strokeStyle;
@@ -853,10 +998,32 @@ function draw() {
     ctx.save(); ctx.translate(ball.x, ball.y);
     const spd = Math.sqrt(ball.vx ** 2 + ball.vy ** 2); const str = 1 + Math.pow(spd / config.maxSpeed, 1.5) * (config.maxSpeed * config.stretchFactor);
     ctx.rotate(Math.atan2(ball.vy, ball.vx)); ctx.scale(str, 1 / str); ctx.rotate(-Math.atan2(ball.vy, ball.vx)); ctx.rotate(ball.angle);
+    // イエロージャイアントモードの表示サイズを決める
+    const ygLvDraw = saveData.upgrades.yellowGiant;
+    const ygDrawR = yellowGiantMode
+        ? (ygLvDraw === 3 ? config.ballRadius * 11 : (ygLvDraw === 2 ? config.ballRadius * 7 : config.ballRadius * 3.5))
+        : config.ballRadius;
+    if (yellowGiantMode) {
+        // 黄色いオーラ（複数リング）
+        for (let ri = 0; ri < 3; ri++) {
+            const pulse = Math.sin(Date.now() / 80 + ri * 1.0) * 8;
+            ctx.beginPath();
+            ctx.arc(0, 0, ygDrawR + 12 + ri * 10 + pulse, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 220, 0, ${0.6 - ri * 0.15})`;
+            ctx.lineWidth = 5 - ri;
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = '#ffff00';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+        ctx.fillStyle = 'rgba(255, 230, 0, 0.25)';
+        ctx.beginPath(); ctx.arc(0, 0, ygDrawR * 1.4, 0, Math.PI * 2); ctx.fill();
+    }
     if (powerModeTimer > 0) { ctx.shadowBlur = 50; ctx.shadowColor = '#ff0000'; ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'; ctx.beginPath(); ctx.arc(0, 0, config.ballRadius * 1.8, 0, Math.PI * 2); ctx.fill(); }
     else if (boostEffectTimer > 0) { ctx.shadowBlur = 25; ctx.shadowColor = '#ffffff'; }
-    if (imagesLoaded >= 1) { ctx.drawImage(ballImage, -config.ballRadius, -config.ballRadius, config.ballRadius * 2, config.ballRadius * 2); }
-    else { ctx.fillStyle = '#ff3366'; ctx.beginPath(); ctx.arc(0, 0, config.ballRadius, 0, Math.PI * 2); ctx.fill(); }
+    else if (yellowGiantMode) { ctx.shadowBlur = 40; ctx.shadowColor = '#ffff00'; }
+    if (imagesLoaded >= 1) { ctx.drawImage(ballImage, -ygDrawR, -ygDrawR, ygDrawR * 2, ygDrawR * 2); }
+    else { ctx.fillStyle = yellowGiantMode ? '#ffff00' : '#ff3366'; ctx.beginPath(); ctx.arc(0, 0, ygDrawR, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore(); ctx.restore();
 
     // 白飛びエフェクト（ゴール時）

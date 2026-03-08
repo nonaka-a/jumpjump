@@ -276,7 +276,7 @@ class Particle {
     }
 }
 
-let ball, lines, boosters, items, blocks, particles, speedLines;
+let ball, lines, boosters, items, blocks, particles, speedLines, lasers;
 let isDrawing, startPoint, currentPoint, maxHeight, gameActive, cameraY;
 let boostEffectTimer, powerModeTimer, nextGateAlt, nextBlockY, nextSingleBoosterY, currentSheetCount;
 
@@ -296,7 +296,7 @@ function initGame() {
         angle: 0,
         va: 0
     };
-    lines = []; boosters = []; items = []; blocks = []; particles = []; speedLines = [];
+    lines = []; boosters = []; items = []; blocks = []; particles = []; speedLines = []; lasers = [];
     isDrawing = false; startPoint = null; currentPoint = null;
     maxHeight = 0; cameraY = 0; boostEffectTimer = 0; powerModeTimer = 0;
     nextGateAlt = 500; nextBlockY = -800; nextSingleBoosterY = -300;
@@ -439,6 +439,16 @@ function update() {
 
             playSound('energy');
             b.active = false;
+
+            // Lv3ならレーザー演出追加
+            if (bLv === 3) {
+                lasers.push({
+                    x: b.x + b.w / 2,
+                    y: b.y + b.h / 2,
+                    life: 1.0,
+                    width: b.w
+                });
+            }
         }
     });
     items.forEach(it => { if (it.active && Math.sqrt((ball.x - it.x) ** 2 + (ball.y - it.y) ** 2) < (config.ballRadius + it.radius)) { const aLv = saveData.upgrades.aura; powerModeTimer = (aLv === 3) ? 15 : (aLv === 2 ? 10 : 5); it.active = false; playSound('energy'); for (let i = 0; i < 60; i++) particles.push(new Particle(it.x, it.y, '#ff0000', (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, 0.02, 5)); } });
@@ -539,6 +549,12 @@ function update() {
     boosters = boosters.filter(b => b.y < cameraY + canvas.height + 100);
     items = items.filter(it => it.y < cameraY + canvas.height + 100);
     blocks = blocks.filter(bk => bk.y < cameraY + canvas.height + 100 && bk.active);
+
+    // レーザーの更新
+    for (let i = lasers.length - 1; i >= 0; i--) {
+        lasers[i].life -= 0.04;
+        if (lasers[i].life <= 0) lasers.splice(i, 1);
+    }
 }
 
 function checkCollision(ball, line) {
@@ -582,6 +598,24 @@ function draw() {
     const gStep = 50; const sGrid = Math.floor(cameraY / gStep) * gStep;
     for (let gy = sGrid; gy < sGrid + canvas.height + gStep; gy += gStep) { ctx.beginPath(); ctx.moveTo(0, gy - cameraY); ctx.lineTo(canvas.width, gy - cameraY); ctx.stroke(); }
     particles.forEach(p => p.draw(ctx, cameraY));
+
+    // レーザーの描画
+    lasers.forEach(l => {
+        const alpha = l.life;
+        const w = l.width * l.life;
+        const gradient = ctx.createLinearGradient(l.x - w / 2, 0, l.x + w / 2, 0);
+        gradient.addColorStop(0, 'rgba(0, 255, 255, 0)');
+        gradient.addColorStop(0.5, `rgba(255, 255, 255, ${alpha * 0.7})`);
+        gradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(l.x - w / 2, 0, w, canvas.height);
+
+        // 芯の部分
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.5})`;
+        ctx.fillRect(l.x - 2, 0, 4, canvas.height);
+    });
+
     ctx.save(); ctx.translate(0, -cameraY);
     blocks.forEach(bk => {
         if (!bk.active) return;

@@ -13,7 +13,7 @@ body {
 
 canvas {
     background: #000;
-    box-shadow: 0 0 30px rgba(255,0,0,0.1);
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.1);
     cursor: crosshair;
     touch-action: none;
     position: absolute;
@@ -25,11 +25,11 @@ canvas {
     position: absolute;
     top: 20px;
     left: 20px;
-    color: #00ffcc;
+    color: #00ccff;
     pointer-events: none;
     font-size: 24px;
     font-weight: bold;
-    text-shadow: 0 0 10px rgba(0,255,204,0.8);
+    text-shadow: 0 0 10px rgba(0, 204, 255, 0.8);
     z-index: 10;
     display: none;
 }
@@ -61,25 +61,42 @@ canvas {
     background: rgba(10, 20, 20, 0.95);
     padding: 40px;
     border-radius: 20px;
-    border: 3px solid #00ffcc;
+    border: 3px solid #00ccff;
     text-align: center;
     max-width: 400px;
     width: 90%;
-    box-shadow: 0 0 30px rgba(0,255,204,0.3);
+    box-shadow: 0 0 30px rgba(0, 204, 255, 0.3);
 }
 
-h1 { color: #00ffcc; margin-top: 0; text-shadow: 0 0 15px rgba(0,255,204,0.5); }
-h2 { color: #ffff00; margin-top: 0; }
+h1 {
+    color: #00ccff;
+    margin-top: 0;
+    text-shadow: 0 0 15px rgba(0, 204, 255, 0.5);
+}
 
-.stat-text { font-size: 20px; margin: 10px 0; font-weight: bold; }
-.gp-text { color: #ffff00; font-size: 24px; text-shadow: 0 0 10px rgba(255,255,0,0.5); }
+h2 {
+    color: #ffff00;
+    margin-top: 0;
+}
+
+.stat-text {
+    font-size: 20px;
+    margin: 10px 0;
+    font-weight: bold;
+}
+
+.gp-text {
+    color: #ffff00;
+    font-size: 24px;
+    text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+}
 
 button {
     padding: 15px 30px;
     font-size: 18px;
     cursor: pointer;
     pointer-events: auto;
-    background: #00ffcc;
+    background: #00ccff;
     color: #000;
     border: none;
     border-radius: 50px;
@@ -88,24 +105,55 @@ button {
     font-family: inherit;
 }
 
-button:hover { transform: scale(1.05); box-shadow: 0 0 15px #00ffcc; }
-button:disabled { background: #555; color: #888; cursor: not-allowed; box-shadow: none; transform: none; }
+button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px #00ccff;
+}
+
+button:disabled {
+    background: #555;
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
 
 .shop-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     padding: 12px;
     margin-bottom: 10px;
     border-radius: 10px;
     text-align: left;
 }
 
-.shop-info { flex: 1; padding-right: 10px; }
-.shop-title { font-weight: bold; font-size: 16px; color: #00ffcc; }
-.shop-desc { font-size: 10px; color: #ddd; display: block; margin-top: 4px; line-height: 1.2; }
-.shop-btn { padding: 8px 12px; font-size: 14px; width: 110px; flex-shrink: 0; }
+.shop-info {
+    flex: 1;
+    padding-right: 10px;
+}
+
+.shop-title {
+    font-weight: bold;
+    font-size: 16px;
+    color: #00ccff;
+}
+
+.shop-desc {
+    font-size: 10px;
+    color: #ddd;
+    display: block;
+    margin-top: 4px;
+    line-height: 1.2;
+}
+
+.shop-btn {
+    padding: 8px 12px;
+    font-size: 14px;
+    width: 110px;
+    flex-shrink: 0;
+}
 
 .btn-group-vertical {
     display: flex;
@@ -114,4 +162,8 @@ button:disabled { background: #555; color: #888; cursor: not-allowed; box-shadow
     gap: 15px;
     margin-top: 30px;
 }
-.btn-group-vertical button { width: 220px; margin: 0; }
+
+.btn-group-vertical button {
+    width: 240px;
+    margin: 0;
+}

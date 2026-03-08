@@ -1,75 +1,86 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>MAIMAI'S JUNPJUNP!</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<!-- ゲーム中UI -->
-<div id="gameUI">
-    ALTITUDE: <span id="heightScore">0</span> m
-    <div id="powerUI">RED AURA: <span id="timer">10</span>s</div>
-</div>
+    <!-- ゲーム中UI -->
+    <div id="gameUI">
+        <span data-i18n="altitude">ALTITUDE:</span> <span id="heightScore">0</span> m
+        <div id="powerUI"><span data-i18n="redAura">RED AURA:</span> <span id="timer">10</span>s</div>
+    </div>
 
-<!-- タイトル画面 -->
-<div id="titleScreen" class="screen">
-    <div class="screen-box">
-        <h1>MAIMAI'S JUNPJUNP!</h1>
-        <div class="stat-text">HIGH SCORE: <span id="titleHigh">0</span> m</div>
-        <div class="stat-text gp-text">TOTAL GP: <span id="titleGp">0</span></div>
-        <div class="btn-group-vertical">
-            <button onclick="changeState('play')" style="background: #ff3366; color: white;">JUMP (START)</button>
-            <button onclick="changeState('shop')">SHOP</button>
-            <button onclick="changeState('settings')">SETTINGS</button>
+    <!-- タイトル画面 -->
+    <div id="titleScreen" class="screen">
+        <div class="screen-box">
+            <h1>MAIMAI'S JUNPJUNP!</h1>
+            <div class="stat-text"><span data-i18n="highScore">HIGH SCORE:</span> <span id="titleHigh">0</span> m</div>
+            <div class="stat-text gp-text"><span data-i18n="totalGp">TOTAL GP:</span> <span id="titleGp">0</span></div>
+            <div class="btn-group-vertical">
+                <button onclick="changeState('play')" style="background: #ff3366; color: white;"
+                    data-i18n="jumpStart">JUMP (START)</button>
+                <button onclick="changeState('shop')" data-i18n="shop">SHOP</button>
+                <button onclick="changeState('settings')" data-i18n="settings">SETTINGS</button>
+                <button id="langToggleBtn" onclick="toggleLanguage()">LANGUAGE: ENGLISH</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- 設定画面 -->
-<div id="settingsScreen" class="screen" style="display: none;">
-    <div class="screen-box">
-        <h2>SETTINGS</h2>
-        
-        <div class="btn-group-vertical" style="margin-top: 20px;">
-            <button id="soundToggleBtn" onclick="toggleSound()">SOUND: ON</button>
-            <button onclick="confirmReset()" style="background: #666; color: #fff;">RESET DATA</button>
-            <button onclick="changeState('title')" style="margin-top: 20px;">BACK TO TITLE</button>
+    <!-- 設定画面 -->
+    <div id="settingsScreen" class="screen" style="display: none;">
+        <div class="screen-box">
+            <h2 data-i18n="settings">SETTINGS</h2>
+
+            <div class="btn-group-vertical" style="margin-top: 20px;">
+                <button id="soundToggleBtn" onclick="toggleSound()">SOUND: ON</button>
+                <button onclick="confirmReset()" style="background: #666; color: #fff;" data-i18n="resetData">RESET
+                    DATA</button>
+                <button onclick="changeState('title')" style="margin-top: 20px;" data-i18n="backToTitle">BACK TO
+                    TITLE</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- ショップ画面 -->
-<div id="shopScreen" class="screen" style="display: none;">
-    <div class="screen-box" style="padding: 20px; max-width: 450px;">
-        <h2>UPGRADE SHOP</h2>
-        <div class="stat-text gp-text" style="margin-bottom: 20px;">GP: <span id="shopGp">0</span></div>
-        
-        <div id="shopList">
-            <!-- JavaScriptで動的に生成されます -->
-        </div>
+    <!-- ショップ画面 -->
+    <div id="shopScreen" class="screen" style="display: none;">
+        <div class="screen-box" style="padding: 20px; max-width: 450px;">
+            <h2 data-i18n="upgradeShop">UPGRADE SHOP</h2>
+            <div class="stat-text gp-text" style="margin-bottom: 20px;">GP: <span id="shopGp">0</span></div>
 
-        <button onclick="changeState('title')" style="margin-top: 20px; width: 220px;">BACK TO TITLE</button>
-    </div>
-</div>
+            <div id="shopList">
+                <!-- JavaScriptで動的に生成されます -->
+            </div>
 
-<!-- リザルト画面 -->
-<div id="resultScreen" class="screen" style="display: none;">
-    <div class="screen-box">
-        <h1 id="resultTitle">GAME OVER</h1>
-        <div class="stat-text">Reached: <span id="resultHeight">0</span> m</div>
-        <div class="stat-text gp-text">Earned GP: +<span id="resultEarned">0</span></div>
-        <div class="btn-group-vertical">
-            <button onclick="changeState('play')" style="background: #ff3366; color: white;">RETRY</button>
-            <button onclick="changeState('title')">TITLE</button>
+            <button onclick="changeState('title')" style="margin-top: 20px; width: 220px;" data-i18n="backToTitle">BACK
+                TO TITLE</button>
         </div>
     </div>
-</div>
 
-<canvas id="gameCanvas"></canvas>
+    <!-- リザルト画面 -->
+    <div id="resultScreen" class="screen" style="display: none;">
+        <div class="screen-box">
+            <h1 id="resultTitle" data-i18n="gameOver">GAME OVER</h1>
+            <div class="stat-text"><span data-i18n="reached">Reached:</span> <span id="resultHeight">0</span> m</div>
+            <div class="stat-text gp-text"><span data-i18n="earnedGp">Earned GP:</span> +<span
+                    id="resultEarned">0</span></div>
+            <div class="btn-group-vertical">
+                <button onclick="changeState('play')" style="background: #ff3366; color: white;"
+                    data-i18n="retry">RETRY</button>
+                <button onclick="changeState('title')" data-i18n="titleBtn">TITLE</button>
+            </div>
+        </div>
+    </div>
 
-<script src="script.js"></script>
+    <canvas id="gameCanvas"></canvas>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
 </body>
+
 </html>

@@ -27,12 +27,13 @@ const UPGRADE_DATA = {
     },
     booster: {
         name: "Speed Booster",
-        costs: [500, 1500],
-        max: 2,
+        costs: [500, 1500, 8000],
+        max: 3,
         descs: [
             "道中に青い単体ブースターが出現するようになります",
             "単体ブースターの出現率がアップします",
-            "ブースター出現率は最大です"
+            "ブースターの出力が強化され、噴射時に虹色の光を放ちます",
+            "ブースター性能は最大です"
         ]
     },
     aura: {
@@ -48,15 +49,16 @@ const UPGRADE_DATA = {
     },
     pierce: {
         name: "Block Pierce",
-        costs: [400, 2500, 6000, 12000, 25000],
-        max: 5,
+        costs: [400, 2500, 6000, 12000, 25000, 50000],
+        max: 6,
         descs: [
             "紫を貫通(減)、赤を1回破壊(反)へ",
             "紫を完貫、赤を貫通(減)、黄を1回破壊へ",
             "紫赤を完貫、黄を貫通(減)、白を1回破壊へ",
             "紫赤黄を完貫、白を貫通(減)へ",
             "全ブロックを減速なしで完全貫通。無敵の突破力です",
-            "貫通力は究極です"
+            "全ブロックを貫通し、さらに破壊時に上方向への加速を得ます",
+            "貫通力と加速の極致。全ての破壊が新たな推進力を生みます"
         ]
     },
     sheet: {
@@ -415,7 +417,30 @@ function update() {
     if (ball.vy < -config.speedLineThreshold && Math.random() > 0.3) { speedLines.push({ x: Math.random() < 0.5 ? Math.random() * 60 : canvas.width - Math.random() * 60, y: -50, h: 60 + Math.random() * 100, v: 20 + Math.random() * 15 }); }
     speedLines.forEach((sl, i) => { sl.y += sl.v; if (sl.y > canvas.height) speedLines.splice(i, 1); });
 
-    boosters.forEach(b => { if (b.active && ball.x > b.x && ball.x < b.x + b.w && ball.y > b.y && ball.y < b.y + b.h) { ball.vy = config.boostPower; boostEffectTimer = 25; for (let i = 0; i < 25; i++) particles.push(new Particle(ball.x, ball.y, '#00ffff', (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20)); playSound('energy'); b.active = false; } });
+    boosters.forEach(b => {
+        if (b.active && ball.x > b.x && ball.x < b.x + b.w && ball.y > b.y && ball.y < b.y + b.h) {
+            const bLv = saveData.upgrades.booster;
+            // Lv3ならブーストパワーを強化 (-22 -> -28)
+            const power = bLv === 3 ? config.boostPower - 6 : config.boostPower;
+            ball.vy = power;
+            boostEffectTimer = 25;
+
+            // パーティクル生成
+            const count = bLv === 3 ? 60 : 25;
+            for (let i = 0; i < count; i++) {
+                let color = '#00ffff';
+                if (bLv === 3) {
+                    // Lv3なら虹色のカラフルなパーティクル
+                    const colors = ['#00ffff', '#ff00ff', '#ffff00', '#ffffff', '#00ff00'];
+                    color = colors[Math.floor(Math.random() * colors.length)];
+                }
+                particles.push(new Particle(ball.x, ball.y, color, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20));
+            }
+
+            playSound('energy');
+            b.active = false;
+        }
+    });
     items.forEach(it => { if (it.active && Math.sqrt((ball.x - it.x) ** 2 + (ball.y - it.y) ** 2) < (config.ballRadius + it.radius)) { const aLv = saveData.upgrades.aura; powerModeTimer = (aLv === 3) ? 15 : (aLv === 2 ? 10 : 5); it.active = false; playSound('energy'); for (let i = 0; i < 60; i++) particles.push(new Particle(it.x, it.y, '#ff0000', (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, 0.02, 5)); } });
 
     if (currentSheetCount > 0 && ball.y > cameraY + canvas.height - 40) {
@@ -462,6 +487,15 @@ function update() {
                         if (bk.type === 'yellow') c = '#ffff00';
                         if (bk.type === 'white') c = '#ffffff';
                         particles.push(new Particle(cx, cy, c, (Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12, 0.03, Math.random() * 4 + 2));
+                    }
+                    // 加速ボーナス (Lv 6以上)
+                    if (pLv >= 6) {
+                        ball.vy = Math.min(ball.vy, -8) - 2.5; // 小さな追加加速
+                        if (ball.vy < -22) ball.vy = -22;     // ブースター(-22)を上限とする
+                        // 加速エフェクト
+                        for (let i = 0; i < 8; i++) {
+                            particles.push(new Particle(ball.x, ball.y, '#ffffff', (Math.random() - 0.5) * 4, 3, 0.1, 2));
+                        }
                     }
                 }
                 if (bounce) {

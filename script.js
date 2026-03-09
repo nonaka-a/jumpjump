@@ -449,7 +449,13 @@ function getPos(e) {
 
 canvas.addEventListener('mousedown', (e) => { if (gameActive) { isDrawing = true; startPoint = getPos(e); } });
 window.addEventListener('mousemove', (e) => { if (isDrawing) { if (e.cancelable) e.preventDefault(); currentPoint = getPos(e); } });
-window.addEventListener('mouseup', () => { isDrawing = false; });
+window.addEventListener('mouseup', () => {
+    if (isDrawing && startPoint && currentPoint) {
+        const dx = currentPoint.x - startPoint.x, dy = currentPoint.y - startPoint.y, len = Math.sqrt(dx * dx + dy * dy);
+        if (len > 5) lines.push({ x1: startPoint.x, y1: startPoint.y, x2: currentPoint.x, y2: currentPoint.y, length: len });
+    }
+    isDrawing = false; startPoint = null; currentPoint = null;
+});
 canvas.addEventListener('touchstart', (e) => { if (gameActive) { isDrawing = true; startPoint = getPos(e); } }, { passive: false });
 window.addEventListener('touchmove', (e) => { if (isDrawing) { if (e.cancelable) e.preventDefault(); currentPoint = getPos(e); } }, { passive: false });
 window.addEventListener('touchend', () => {

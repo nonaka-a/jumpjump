@@ -633,8 +633,12 @@ function update() {
     });
     yellowItems = yellowItems.filter(it => it.y < cameraY + canvas.height + 100);
 
-    if (currentSheetCount > 0 && ball.y > cameraY + canvas.height - 40) {
-        ball.vy = -18; ball.y = cameraY + canvas.height - 45; currentSheetCount--; playSound('energy');
+   const sheetY = canvas.height - 70; // シートの高さを設定
+    if (currentSheetCount > 0 && ball.y > cameraY + sheetY - 10) {
+        ball.vy = -18; 
+        ball.y = cameraY + sheetY - 15; 
+        currentSheetCount--; 
+        playSound('energy');
         ball.firstFall = false;
         for (let i = 0; i < 30; i++) particles.push(new Particle(ball.x, ball.y, '#00ccff', (Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, 0.04, 4));
     }
@@ -831,8 +835,15 @@ function draw() {
     drawBackground();
     
     if (currentSheetCount > 0) {
-        ctx.strokeStyle = '#00ccff'; ctx.lineWidth = 20; ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 100) * 0.2;
-        ctx.beginPath(); ctx.moveTo(PLAY_X, canvas.height - 30); ctx.lineTo(PLAY_X + PLAY_W, canvas.height - 30); ctx.stroke(); ctx.globalAlpha = 1.0;
+        const drawSheetY = canvas.height - 70; // 判定位置と同じ高さに設定
+        ctx.strokeStyle = '#00ccff'; 
+        ctx.lineWidth = 20; 
+        ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 100) * 0.2;
+        ctx.beginPath(); 
+        ctx.moveTo(PLAY_X, drawSheetY); 
+        ctx.lineTo(PLAY_X + PLAY_W, drawSheetY); 
+        ctx.stroke(); 
+        ctx.globalAlpha = 1.0;
     }
     
     ctx.strokeStyle = yellowGiantJumping ? 'rgba(255, 220, 0, 0.8)' : (powerModeTimer > 0 ? 'rgba(255, 30, 0, 0.7)' : 'rgba(0, 204, 255, 0.4)'); ctx.lineWidth = yellowGiantJumping ? 4 : 3;

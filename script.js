@@ -74,7 +74,11 @@ function changeState(state) {
     document.getElementById('resultScreen').style.display = 'none';
     document.getElementById('gameUI').style.display = 'none';
     gameActive = false;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // BGM再生のためにAudioContextを確実に再開させる
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
 
     if (state === 'title') {
         stopBGM();
@@ -91,6 +95,7 @@ function changeState(state) {
         document.getElementById('settingsScreen').style.display = 'flex';
         updateSettingsUI();
     } else if (state === 'play') {
+        // プレイ開始時にBGMを再生
         playBGM('bgm');
         document.getElementById('gameUI').style.display = 'block';
         initGame();
@@ -202,17 +207,10 @@ function resetData() {
         highScore: 0,
         soundEnabled: saveData.soundEnabled,
         upgrades: {
-            jump: 0,
-            booster: 0,
-            aura: 0,
-            pierce: 0,
-            sheet: 0,
-            yellowGiant: 0,
-            multiplier: 0
+            jump: 0, booster: 0, aura: 0, pierce: 0, sheet: 0, yellowGiant: 0, multiplier: 0
         }
     };
     saveGameData();
-    alert("データをリセットしました。");
     changeState('title');
 }
 
@@ -233,41 +231,67 @@ let currentBgmName = "";
 async function loadSound(name, url) {
     try {
         const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const arrayBuffer = await response.arrayBuffer();
         soundBuffers[name] = await audioCtx.decodeAudioData(arrayBuffer);
-        if (name === 'bgm' && gameActive && currentBgmName === "") playBGM('bgm');
-    } catch (e) { }
+    } catch (e) {
+        console.warn(`Sound load failed for ${name}:`, e);
+    }
 }
+
+const fallbackAudios = {};
 function playSound(name, volume = 1.0) {
     if (!saveData.soundEnabled) return;
-    if (!soundBuffers[name]) return;
-    const source = audioCtx.createBufferSource();
-    source.buffer = soundBuffers[name];
-    const gainNode = audioCtx.createGain();
-    gainNode.gain.value = volume;
-    source.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    source.start(0);
+    
+    if (!soundBuffers[name]) {
+        if(!fallbackAudios[name]) {
+            const urlMap = {
+                'jump': 'jump2.mp3', 'energy': 'energy.mp3',
+                'dest1': 'block_destruction1.mp3', 'dest2': 'block_destruction2.mp3',
+                'flameburst': 'Flames_burst.mp3'
+            };
+            if(urlMap[name]) fallbackAudios[name] = new Audio(urlMap[name]);
+        }
+        if(fallbackAudios[name]){
+            fallbackAudios[name].volume = volume;
+            fallbackAudios[name].currentTime = 0;
+            fallbackAudios[name].play().catch(()=>{});
+        }
+        return;
+    }
+
+    try {
+        const source = audioCtx.createBufferSource();
+        source.buffer = soundBuffers[name];
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.value = volume;
+        source.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        source.start(0);
+    } catch (e) { console.warn("playSound error", e); }
 }
 
 function playBGM(name) {
     if (!saveData.soundEnabled) return;
-    if (!soundBuffers[name]) return;
+    // ロードが完了していない場合は少し待ってから再試行
+    if (!soundBuffers[name]) {
+        setTimeout(() => playBGM(name), 500);
+        return;
+    }
     if (bgmSource && currentBgmName === name) return;
 
     stopBGM();
-
-    bgmSource = audioCtx.createBufferSource();
-    bgmSource.buffer = soundBuffers[name];
-    bgmSource.loop = true;
-
-    bgmGain = audioCtx.createGain();
-    bgmGain.gain.value = 0.3;
-
-    bgmSource.connect(bgmGain);
-    bgmGain.connect(audioCtx.destination);
-    bgmSource.start(0);
-    currentBgmName = name;
+    try {
+        bgmSource = audioCtx.createBufferSource();
+        bgmSource.buffer = soundBuffers[name];
+        bgmSource.loop = true;
+        bgmGain = audioCtx.createGain();
+        bgmGain.gain.value = 0.3;
+        bgmSource.connect(bgmGain);
+        bgmGain.connect(audioCtx.destination);
+        bgmSource.start(0);
+        currentBgmName = name;
+    } catch (e) { console.warn("playBGM error", e); }
 }
 
 function fadeToBGM(nextName, duration = 3.0) {
@@ -277,22 +301,24 @@ function fadeToBGM(nextName, duration = 3.0) {
     const oldGain = bgmGain;
 
     if (oldGain) {
-        oldGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+        try { oldGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration); } catch(e){}
     }
 
-    const newSource = audioCtx.createBufferSource();
-    newSource.buffer = soundBuffers[nextName];
-    newSource.loop = true;
-    const newGain = audioCtx.createGain();
-    newGain.gain.value = 0;
-    newSource.connect(newGain);
-    newGain.connect(audioCtx.destination);
-    newSource.start(0);
-    newGain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + duration);
+    try {
+        const newSource = audioCtx.createBufferSource();
+        newSource.buffer = soundBuffers[nextName];
+        newSource.loop = true;
+        const newGain = audioCtx.createGain();
+        newGain.gain.value = 0;
+        newSource.connect(newGain);
+        newGain.connect(audioCtx.destination);
+        newSource.start(0);
+        newGain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + duration);
 
-    bgmSource = newSource;
-    bgmGain = newGain;
-    currentBgmName = nextName;
+        bgmSource = newSource;
+        bgmGain = newGain;
+        currentBgmName = nextName;
+    } catch (e) { console.warn("fadeToBGM error", e); }
 
     setTimeout(() => {
         if (oldSource) {
@@ -310,6 +336,14 @@ function stopBGM() {
     currentBgmName = "";
 }
 
+loadSound('jump', 'jump2.mp3');
+loadSound('energy', 'energy.mp3');
+loadSound('bgm', 'BGM.mp3');
+loadSound('bgm2', 'BGM2.mp3');
+loadSound('dest1', 'block_destruction1.mp3');
+loadSound('dest2', 'block_destruction2.mp3');
+loadSound('flameburst', 'Flames_burst.mp3');
+
 // --- ゲームロジック ---
 let PLAY_X = 0;
 let PLAY_W = 400;
@@ -317,9 +351,6 @@ let PLAY_W = 400;
 function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
-
     PLAY_W = Math.min(canvas.width * 0.90, 520);
     PLAY_X = (canvas.width - PLAY_W) / 2;
 }
@@ -341,7 +372,7 @@ class Particle {
 
 let ball, lines, boosters, items, blocks, particles, speedLines, lasers, ghosts, ghostTimer;
 let isDrawing, startPoint, currentPoint, maxHeight, gameActive, cameraY;
-let boostEffectTimer, powerModeTimer, nextGateAlt, nextBlockY;
+let boostEffectTimer, powerModeTimer, nextGateAlt, nextBlockY, nextSingleBoosterY, currentSheetCount;
 let fadeToWhite = 0;
 let yellowItems = [];
 let yellowGiantMode = false;
@@ -352,11 +383,11 @@ let yellowGiantRemainingY = 0;
 const config = {
     ballRadius: 26, gravity: 0.22, maxSpeed: 20, baseBounce: 9, powerMultiplier: 280,
     cameraLerp: 0.1, rotationDamping: 0.95, moveRotationFactor: 0.002, bounceRotationFactor: 0.03,
-    stretchFactor: 0.004, boostPower: -22, speedLineThreshold: 28
+    stretchFactor: 0.005, bounceThreshold: 5, boostPower: -22, parallaxSpeed: 0.005, speedLineThreshold: 28,
+    particleThreshold: 8
 };
 
 function initGame() {
-    // 落下猶予のため、開始位置を高さ60%付近に変更
     ball = {
         x: canvas.width / 2,
         y: canvas.height * 0.6,
@@ -369,13 +400,11 @@ function initGame() {
     lines = []; boosters = []; items = []; blocks = []; particles = []; speedLines = []; lasers = []; ghosts = []; yellowItems = [];
     isDrawing = false; startPoint = null; currentPoint = null;
     maxHeight = 0; cameraY = 0; boostEffectTimer = 0; powerModeTimer = 0; ghostTimer = 0; fadeToWhite = 0;
-    nextGateAlt = 500; nextBlockY = -800;
-    currentSheetCount = saveData.upgrades.sheet;
+    nextGateAlt = 500; nextBlockY = -800; nextSingleBoosterY = -300;
+    currentSheetCount = saveData.upgrades.sheet || 0;
     yellowGiantMode = false; yellowGiantJumpDist = 0; yellowGiantJumping = false; yellowGiantRemainingY = 0;
     
     document.getElementById('heightScore').textContent = "0";
-    
-    // UIのスライドアウト状態への初期化
     document.getElementById('powerUI').classList.remove('active');
     document.getElementById('yellowGiantUI').classList.remove('active');
 
@@ -450,7 +479,6 @@ window.addEventListener('touchend', () => {
 function update() {
     if (!gameActive) return;
 
-    // --- イエロージャイアントの高速上昇処理 ---
     if (yellowGiantJumping) {
         const jumpSpeed = 32;
         ball.vy = -jumpSpeed;
@@ -498,10 +526,9 @@ function update() {
         speedLines = speedLines.filter(sl => sl.y <= canvas.height);
 
         if (ball.y > cameraY + canvas.height + 50 && fadeToWhite === 0) changeState('result');
-        return; // 物理演算スキップ
+        return; 
     }
 
-    // --- 通常時の物理処理 ---
     const grav = ball.firstFall ? config.gravity * 0.4 : config.gravity;
     ball.vy += grav; ball.x += ball.vx; ball.y += ball.vy;
     if (ball.vy < 0) ball.firstFall = false;
@@ -519,12 +546,13 @@ function update() {
     const spawnY = cameraY - 400;
     const spawnActive = currentAlt < 9800;
 
-    // オブジェクト生成
     if (currentAlt >= nextGateAlt && spawnActive) { spawnBooster(ball.y - 450, true); nextGateAlt = (nextGateAlt === 500) ? 1000 : nextGateAlt + 1000; }
     
     const bLv = saveData.upgrades.booster;
-    if (bLv > 0 && spawnActive && Math.random() < (bLv >= 2 ? 0.01 : 0.005)) {
-        spawnBooster(spawnY, false);
+    if (bLv > 0 && cameraY < nextSingleBoosterY && spawnActive) {
+        const prob = (bLv === 2) ? 0.9 : 0.6;
+        if (Math.random() < prob) spawnBooster(nextSingleBoosterY - 200, false);
+        nextSingleBoosterY -= (bLv === 2 ? 600 : 1000);
     }
 
     const aLv = saveData.upgrades.aura;
@@ -546,7 +574,6 @@ function update() {
         nextBlockY -= interval;
     }
 
-    // --- UIのスライドイン制御 ---
     const powerUI = document.getElementById('powerUI');
     if (powerModeTimer > 0) {
         powerModeTimer -= 1 / 60; 
@@ -565,18 +592,11 @@ function update() {
         giantUI.classList.remove('active');
     }
 
-    if (yellowGiantMode) {
-        for (let i = 0; i < 4; i++) {
-            const ygLv2 = saveData.upgrades.yellowGiant;
-            const ygR = ygLv2 === 3 ? config.ballRadius * 11 : (ygLv2 === 2 ? config.ballRadius * 7 : config.ballRadius * 3.5);
-            particles.push(new Particle(ball.x + (Math.random() - 0.5) * ygR * 2, ball.y + (Math.random() - 0.5) * ygR * 2, Math.random() > 0.4 ? '#ffff00' : '#ffcc00', (Math.random() - 0.5) * 3, -Math.random() * 5, 0.05, 4));
-        }
+    if (ball.vy < -config.speedLineThreshold && Math.random() > 0.3) {
+        speedLines.push({ x: PLAY_X + Math.random() * PLAY_W, y: -50, h: 60 + Math.random() * 100, v: 20 + Math.random() * 15 });
     }
-
-    if (ball.vy < -config.speedLineThreshold && Math.random() > 0.3) speedLines.push({ x: PLAY_X + Math.random() * PLAY_W, y: -50, h: 60 + Math.random() * 100, v: 20 + Math.random() * 15 });
     speedLines.forEach((sl, i) => { sl.y += sl.v; if (sl.y > canvas.height) speedLines.splice(i, 1); });
 
-    // 衝突判定：ブースター・アイテム
     boosters.forEach(b => {
         if (b.active && ball.x > b.x && ball.x < b.x + b.w && ball.y > b.y && ball.y < b.y + b.h) {
             const bLv = saveData.upgrades.booster;
@@ -608,20 +628,30 @@ function update() {
     });
     yellowItems = yellowItems.filter(it => it.y < cameraY + canvas.height + 100);
 
-    // 衝突判定：ブロック
+    if (currentSheetCount > 0 && ball.y > cameraY + canvas.height - 40) {
+        ball.vy = -18; ball.y = cameraY + canvas.height - 45; currentSheetCount--; playSound('energy');
+        ball.firstFall = false;
+        for (let i = 0; i < 30; i++) particles.push(new Particle(ball.x, ball.y, '#00ccff', (Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, 0.04, 4));
+    }
+
     const pLv = saveData.upgrades.pierce;
     blocks.forEach(bk => {
         if (bk.active) {
             const cx = Math.max(bk.x, Math.min(ball.x, bk.x + bk.w)), cy = Math.max(bk.y, Math.min(ball.y, bk.y + bk.h)), dist = Math.sqrt((ball.x - cx) ** 2 + (ball.y - cy) ** 2);
             if (dist < config.ballRadius) {
                 const isPower = powerModeTimer > 0;
-                let destroyed = false, bounce = false, slow = false;
-                const bkLv = { purple: 0, red: 1, yellow: 2, white: 3 }[bk.type] || 0;
+                let destroyed = false;
+                let bounce = false;
+                let slow = false;
+
+                const levels = { purple: 0, red: 1, yellow: 2, white: 3 };
+                const bkLv = levels[bk.type] || 0;
 
                 if (isPower || pLv >= (bkLv + 2)) {
-                    destroyed = true;
+                    destroyed = true; 
                 } else if (pLv === (bkLv + 1)) {
-                    destroyed = true; slow = true;
+                    destroyed = true;
+                    slow = true; 
                 } else {
                     bk.hp--;
                     if (pLv > 0 && bk.hp > 0) {
@@ -630,36 +660,41 @@ function update() {
                         if (bk.type === 'white' && pLv >= 3) bk.hp = 0;
                     }
                     if (bk.hp <= 0) destroyed = true;
-                    bounce = true;
+                    bounce = true; 
                 }
 
                 if (destroyed) {
-                    bk.active = false; playSound(Math.random() < 0.5 ? 'dest1' : 'dest2', 0.4);
+                    bk.active = false;
+                    playSound(Math.random() < 0.5 ? 'dest1' : 'dest2', 0.4);
                     for (let i = 0; i < 40; i++) {
-                        let c = bk.type === 'red' ? '#ff1744' : (bk.type === 'yellow' ? '#ffff00' : (bk.type === 'white' ? '#ffffff' : '#8e38cc'));
+                        let c = '#8e38cc';
+                        if (bk.type === 'red') c = '#ff1744';
+                        if (bk.type === 'yellow') c = '#ffff00';
+                        if (bk.type === 'white') c = '#ffffff';
                         particles.push(new Particle(cx, cy, c, (Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12, 0.03, Math.random() * 4 + 2));
                     }
                     if (pLv >= 6) {
-                        ball.vy = Math.min(ball.vy, -8) - 2.5;
-                        if (ball.vy < -22) ball.vy = -22;
-                        for (let i = 0; i < 8; i++) particles.push(new Particle(ball.x, ball.y, '#ffffff', (Math.random() - 0.5) * 4, 3, 0.1, 2));
+                        ball.vy = Math.min(ball.vy, -8) - 2.5; 
+                        if (ball.vy < -22) ball.vy = -22;     
+                        for (let i = 0; i < 8; i++) {
+                            particles.push(new Particle(ball.x, ball.y, '#ffffff', (Math.random() - 0.5) * 4, 3, 0.1, 2));
+                        }
                         ghostTimer = 35;
                     }
                 }
-                if (bounce) { ball.vy = Math.abs(ball.vy) * 0.5 + 2; ball.vx *= 0.5; ball.y -= 10; ball.firstFall = false; playSound('jump'); } 
-                else if (slow) { ball.vy *= 0.7; playSound('jump'); }
+                if (bounce) {
+                    ball.vy = Math.abs(ball.vy) * 0.5 + 2; ball.vx *= 0.5; ball.y -= 10;
+                    ball.firstFall = false;
+                    playSound('jump');
+                } else if (slow) {
+                    ball.vy *= 0.7; playSound('jump');
+                }
             }
         }
     });
 
-    if (currentSheetCount > 0 && ball.y > cameraY + canvas.height - 40) {
-        ball.vy = -18; ball.y = cameraY + canvas.height - 45; currentSheetCount--; playSound('energy'); ball.firstFall = false;
-        for (let i = 0; i < 30; i++) particles.push(new Particle(ball.x, ball.y, '#00ccff', (Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, 0.04, 4));
-    }
-
     if (boostEffectTimer > 0) boostEffectTimer--;
     
-    // ハイジャンプ用パーティクル
     const jLv = saveData.upgrades.jump;
     if (ball.vy < -5) {
         if (jLv >= 1) particles.push(new Particle(ball.x, ball.y, '#00ccff', (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, 0.08, 2));
@@ -667,28 +702,39 @@ function update() {
         if (jLv >= 3) particles.push(new Particle(ball.x, ball.y, '#ffff00', (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, 0.08, 2));
     }
 
-    if (Math.sqrt(ball.vx ** 2 + ball.vy ** 2) > 10) particles.push(new Particle(ball.x, ball.y, powerModeTimer > 0 ? '#ff3300' : '#00ccff', (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3));
+    if (Math.sqrt(ball.vx ** 2 + ball.vy ** 2) > config.particleThreshold) particles.push(new Particle(ball.x, ball.y, powerModeTimer > 0 ? '#ff3300' : '#00ccff', (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3));
     for (let i = particles.length - 1; i >= 0; i--) { particles[i].update(); if (particles[i].life <= 0) particles.splice(i, 1); }
 
-    if (currentAlt > maxHeight && maxHeight < 10000) {
-        maxHeight = Math.min(currentAlt, 10000); document.getElementById('heightScore').textContent = maxHeight;
+    if (currentAlt > maxHeight && maxHeight < 10000) { 
+        maxHeight = Math.min(currentAlt, 10000); document.getElementById('heightScore').textContent = maxHeight; 
         if (maxHeight >= 5000 && currentBgmName === 'bgm') fadeToBGM('bgm2', 3.0);
         if (maxHeight >= 10000) playSound('energy');
     }
-    
-    if (maxHeight >= 10000) { fadeToWhite += 0.005; ball.vy -= 0.6; if (fadeToWhite >= 1.5) changeState('result'); }
+
+    if (maxHeight >= 10000) {
+        fadeToWhite += 0.005; ball.vy -= 0.6; 
+        if (fadeToWhite >= 1.5) { changeState('result'); fadeToWhite = 0; }
+    }
+
     if (ball.y > cameraY + canvas.height + 50 && fadeToWhite === 0) changeState('result');
 
     for (let i = lines.length - 1; i >= 0; i--) {
         if (checkCollision(ball, lines[i])) {
             if (yellowGiantMode && !yellowGiantJumping) {
-                yellowGiantJumping = true; yellowGiantRemainingY = yellowGiantJumpDist * 20; ball.firstFall = false; playSound('flameburst');
-                for (let j = 0; j < 60; j++) particles.push(new Particle(ball.x, ball.y, Math.random() > 0.5 ? '#ffff00' : '#ffffff', (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, 0.025, 6));
+                lines.splice(i, 1);
+                yellowGiantJumping = true;
+                yellowGiantRemainingY = yellowGiantJumpDist * 20; 
+                ball.firstFall = false;
+                playSound('flameburst');
+                for (let j = 0; j < 60; j++) {
+                    particles.push(new Particle(ball.x, ball.y, Math.random() > 0.5 ? '#ffff00' : '#ffffff', (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, 0.025, 6));
+                }
             } else {
-                reflectBall(ball, lines[i]); playSound(powerModeTimer > 0 ? 'flameburst' : 'jump');
+                reflectBall(ball, lines[i]); 
+                lines.splice(i, 1);
+                playSound(powerModeTimer > 0 ? 'flameburst' : 'jump');
                 if (powerModeTimer > 0) for (let j = 0; j < 25; j++) particles.push(new Particle(ball.x, ball.y, '#ff0000', (Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, 0.04, 3));
             }
-            lines.splice(i, 1);
         } else if (lines[i].y1 > cameraY + canvas.height + 100) lines.splice(i, 1);
     }
     
@@ -715,7 +761,6 @@ function reflectBall(ball, line) {
     const jLv = saveData.upgrades.jump;
     const jumpBonus = (jLv === 3) ? 1.8 : (jLv === 2 ? 1.5 : (jLv === 1 ? 1.2 : 1.0));
     let mul = config.powerMultiplier * (powerModeTimer > 0 ? 3.0 : jumpBonus);
-    // 元コードの計算式を忠実に適用
     const pwr = Math.min(config.baseBounce + (mul / (Math.sqrt(dx*dx+dy*dy) * 0.1)), config.maxSpeed * (powerModeTimer > 0 ? 2.2 : 1.0));
     ball.vx = (ball.vx - 2 * dot * nx) * 0.8; ball.vy = (ball.vy - 2 * dot * ny);
     const v = Math.sqrt(ball.vx**2 + ball.vy**2); ball.vx = (ball.vx / v) * pwr; ball.vy = (ball.vy / v) * pwr;
@@ -725,68 +770,100 @@ function reflectBall(ball, line) {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 背景描画
     if (imagesLoaded >= 2) {
         const bgScale = Math.max(canvas.width / bgImage.width, (canvas.height * 1.5) / bgImage.height);
         const bgW = bgImage.width * bgScale, bgH = bgImage.height * bgScale;
         const progress = Math.min(1.0, maxHeight / 10000);
         const startX = (canvas.width - bgW) / 2;
+
         ctx.drawImage(bgImage, startX, (canvas.height - bgH) + progress * (bgH - canvas.height), bgW, bgH);
-        
-        ctx.save(); ctx.beginPath(); ctx.rect(PLAY_X, 0, PLAY_W, canvas.height); ctx.clip();
-        const zoomW = canvas.width * 3, zoomScale = zoomW / bgImage.width, zoomH = bgImage.height * zoomScale;
-        ctx.drawImage(bgImage, (canvas.width - zoomW) / 2, (canvas.height - zoomH) + progress * (zoomH - canvas.height), zoomW, zoomH);
-        ctx.fillStyle = "rgba(0, 0, 0, 0.8)"; ctx.fillRect(PLAY_X, 0, PLAY_W, canvas.height);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(PLAY_X, 0, PLAY_W, canvas.height);
+        ctx.clip(); 
+
+        const zoomW = canvas.width * 3;
+        const zoomScale = zoomW / bgImage.width;
+        const zoomH = bgImage.height * zoomScale;
+        const zoomOffset = progress * (zoomH - canvas.height);
+        const zoomStartX = (canvas.width - zoomW) / 2;
+
+        ctx.drawImage(bgImage, zoomStartX, (canvas.height - zoomH) + zoomOffset, zoomW, zoomH);
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+        ctx.fillRect(PLAY_X, 0, PLAY_W, canvas.height);
+
         ctx.restore();
     }
     
+    // ブルーシート
     if (currentSheetCount > 0) {
         ctx.strokeStyle = '#00ccff'; ctx.lineWidth = 20; ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 100) * 0.2;
         ctx.beginPath(); ctx.moveTo(PLAY_X, canvas.height - 30); ctx.lineTo(PLAY_X + PLAY_W, canvas.height - 30); ctx.stroke(); ctx.globalAlpha = 1.0;
     }
     
+    // スピードライン
     ctx.strokeStyle = yellowGiantJumping ? 'rgba(255, 220, 0, 0.8)' : (powerModeTimer > 0 ? 'rgba(255, 30, 0, 0.7)' : 'rgba(0, 204, 255, 0.4)'); ctx.lineWidth = yellowGiantJumping ? 4 : 3;
     speedLines.forEach(sl => { ctx.beginPath(); ctx.moveTo(sl.x, sl.y); ctx.lineTo(sl.x, sl.y + sl.h); ctx.stroke(); });
     
+    // グリッド
     ctx.strokeStyle = 'rgba(0, 204, 255, 0.1)'; ctx.lineWidth = 1;
     const gStep = 50; const sGrid = Math.floor(cameraY / gStep) * gStep;
     for (let gy = sGrid; gy < sGrid + canvas.height + gStep; gy += gStep) { ctx.beginPath(); ctx.moveTo(PLAY_X, gy - cameraY); ctx.lineTo(PLAY_X + PLAY_W, gy - cameraY); ctx.stroke(); }
     
     particles.forEach(p => p.draw(ctx, cameraY));
 
-    ctx.save(); ctx.translate(0, -cameraY);
-    ghosts.forEach(g => { ctx.save(); ctx.translate(g.x, g.y); ctx.globalAlpha = g.life * 0.4; ctx.fillStyle = '#ff3366'; ctx.beginPath(); ctx.arc(0, 0, config.ballRadius, 0, Math.PI * 2); ctx.fill(); ctx.restore(); });
+    // 残像（ゴースト）
+    ctx.save();
+    ctx.translate(0, -cameraY);
+    ghosts.forEach(g => {
+        ctx.save();
+        ctx.translate(g.x, g.y);
+        ctx.globalAlpha = g.life * 0.4;
+        ctx.fillStyle = '#ff3366';
+        // ゴーストにも伸縮を適用
+        const str = 1 + g.spd * config.stretchFactor;
+        ctx.rotate(Math.atan2(g.vy, g.vx));
+        ctx.scale(str, 1 / str);
+        ctx.rotate(-Math.atan2(g.vy, g.vx));
+        ctx.rotate(g.angle);
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff3366';
+        ctx.beginPath();
+        ctx.arc(0, 0, config.ballRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
     ctx.restore();
 
-// レーザーの描画（発光感アップ）
+    // レーザー（強発光仕様）
     lasers.forEach(l => {
         const alpha = l.life;
         const w = l.width * Math.pow(l.life, 0.5);
-
         ctx.save();
-        // 外側の強いグロー効果
         ctx.shadowBlur = 30;
         ctx.shadowColor = 'rgba(0, 255, 255, 1)';
-        
-        // メインのグラデーション（外側はシアン、内側は白）
         const gradient = ctx.createLinearGradient(l.x - w / 2, 0, l.x + w / 2, 0);
         gradient.addColorStop(0, 'rgba(0, 255, 255, 0)');
         gradient.addColorStop(0.2, `rgba(0, 255, 255, ${alpha * 0.4})`);
         gradient.addColorStop(0.5, `rgba(255, 255, 255, ${alpha * 0.9})`);
         gradient.addColorStop(0.8, `rgba(0, 255, 255, ${alpha * 0.4})`);
         gradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
-
         ctx.fillStyle = gradient;
         ctx.fillRect(l.x - w / 2, 0, w, canvas.height);
-
-        // 芯の部分をさらに白く光らせる
         ctx.shadowBlur = 10;
         ctx.shadowColor = '#ffffff';
         ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
         ctx.fillRect(l.x - Math.max(1, w * 0.1), 0, Math.max(2, w * 0.2), canvas.height);
-        
         ctx.restore();
     });
+
     ctx.save(); ctx.translate(0, -cameraY);
+    
+    // ブロック
     blocks.forEach(bk => {
         if (!bk.active) return;
         const bx = bk.x, by = bk.y, bw = bk.w, bh = bk.h, bevel = 5;
@@ -818,7 +895,9 @@ function draw() {
         ctx.strokeStyle = bk.type === 'white' ? 'rgba(255, 255, 255, 0.4)' : (bk.type === 'yellow' ? 'rgba(255, 255, 0, 0.2)' : (bk.type === 'red' ? 'rgba(255, 100, 100, 0.2)' : 'rgba(255, 255, 255, 0.1)'));
     });
 
+    // アイテム類
     items.forEach(it => { if (!it.active) return; ctx.fillStyle = '#ff3300'; ctx.shadowBlur = 40; ctx.shadowColor = '#ff0000'; const p = Math.sin(Date.now() / 120) * 10; ctx.beginPath(); ctx.arc(it.x, it.y, it.radius + p, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(it.x, it.y, (it.radius + p) * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; });
+    
     yellowItems.forEach(it => {
         if (!it.active) return;
         const p = Math.sin(Date.now() / 90) * 10; const r = it.radius + p;
@@ -836,35 +915,45 @@ function draw() {
         ctx.shadowBlur = 0;
     });
 
-lines.forEach(line => { 
+    // プレイヤーが引いたライン（色変化あり）
+    lines.forEach(line => { 
         if (powerModeTimer > 0) {
-            // パワーモード中は赤色固定
             ctx.strokeStyle = '#ff0000'; 
         } else {
-            // 通常時は短いほど赤（反発力高）、長いほど青（反発力低）になるようにHSLで計算
-            // 以前のロジック: Math.max(0, 180 - line.length * 0.5)
-            const hue = Math.max(0, 180 - line.length * 0.5);
+            const dx = line.x2 - line.x1;
+            const dy = line.y2 - line.y1;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            const hue = Math.max(0, 180 - len * 0.5);
             ctx.strokeStyle = `hsl(${hue}, 100%, 60%)`; 
         }
-        
         ctx.lineWidth = 6; 
         ctx.lineCap = 'round'; 
-        
-        // ライン自体を光らせる
         ctx.shadowBlur = 10;
         ctx.shadowColor = ctx.strokeStyle;
-        
         ctx.beginPath(); 
         ctx.moveTo(line.x1, line.y1); 
         ctx.lineTo(line.x2, line.y2); 
         ctx.stroke(); 
-        
-        ctx.shadowBlur = 0; // グローをリセット
-    });    if (isDrawing && startPoint && currentPoint) { ctx.strokeStyle = '#ffffff'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(startPoint.x, startPoint.y); ctx.lineTo(currentPoint.x, currentPoint.y); ctx.stroke(); ctx.setLineDash([]); }
+        ctx.shadowBlur = 0; 
+    });
 
+    // 描画中の線
+    if (isDrawing && startPoint && currentPoint) { ctx.strokeStyle = '#ffffff'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(startPoint.x, startPoint.y); ctx.lineTo(currentPoint.x, currentPoint.y); ctx.stroke(); ctx.setLineDash([]); }
+
+    // ボール本体
     ctx.save(); ctx.translate(ball.x, ball.y);
-    const spd = Math.sqrt(ball.vx ** 2 + ball.vy ** 2); const str = 1 + Math.pow(spd / config.maxSpeed, 1.5) * config.stretchFactor;
-    ctx.rotate(Math.atan2(ball.vy, ball.vx)); ctx.scale(str, 1 / str); ctx.rotate(-Math.atan2(ball.vy, ball.vx)); ctx.rotate(ball.angle);
+    
+    // スピードに応じた伸縮計算 (閾値を下げ、係数を調整)
+    const spd = Math.sqrt(ball.vx ** 2 + ball.vy ** 2);
+    const stretch = 1 + spd * config.stretchFactor; 
+    const squash = 1 / stretch; 
+
+    // 進行方向に向かって回転させてから伸縮を適用
+    const moveAngle = Math.atan2(ball.vy, ball.vx);
+    ctx.rotate(moveAngle);
+    ctx.scale(stretch, squash);
+    ctx.rotate(-moveAngle);
+    ctx.rotate(ball.angle);
 
     const ygLvDraw = saveData.upgrades.yellowGiant;
     const ygDrawR = yellowGiantMode ? (ygLvDraw === 3 ? config.ballRadius * 11 : (ygLvDraw === 2 ? config.ballRadius * 7 : config.ballRadius * 3.5)) : config.ballRadius;
@@ -886,14 +975,22 @@ lines.forEach(line => {
     else { ctx.fillStyle = yellowGiantMode ? '#ffff00' : '#ff3366'; ctx.beginPath(); ctx.arc(0, 0, ygDrawR, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore(); ctx.restore();
 
+    // ゴール時の白飛びエフェクト
     if (fadeToWhite > 0) {
         ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1.0, fadeToWhite)})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 }
 
-function gameLoop() { if (gameActive) { update(); draw(); requestAnimationFrame(gameLoop); } }
+function gameLoop() { 
+    if (gameActive) { 
+        update(); 
+        draw(); 
+        requestAnimationFrame(gameLoop); 
+    } 
+}
 
+// 初期化
 loadData();
 updateLanguageUI();
 changeState('title');

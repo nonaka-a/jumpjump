@@ -333,7 +333,7 @@ function resizeCanvas() {
     canvas.style.height = '100vh';
 
     // プレイエリアを中央に配置（最大450px、狭い場合は画面の85%）
-    PLAY_W = Math.min(canvas.width * 0.85, 450);
+    PLAY_W = Math.min(canvas.width * 0.90, 520);
     PLAY_X = (canvas.width - PLAY_W) / 2;
 }
 window.addEventListener('resize', resizeCanvas);
@@ -363,7 +363,7 @@ let yellowGiantJumping = false;  // 高速上昇中フラグ
 let yellowGiantRemainingY = 0;   // 上昇残り距離(px)
 
 const config = {
-    ballRadius: 20, gravity: 0.22, maxSpeed: 20, baseBounce: 9, powerMultiplier: 280,
+    ballRadius: 26, gravity: 0.22, maxSpeed: 20, baseBounce: 9, powerMultiplier: 280,
     cameraLerp: 0.1, rotationDamping: 0.95, moveRotationFactor: 0.002, bounceRotationFactor: 0.03,
     stretchFactor: 0.004, boostPower: -22, parallaxSpeed: 0.005, speedLineThreshold: 28
 };

@@ -20,50 +20,89 @@ canvas {
     z-index: 1;
 }
 
-/* UI Layers */
+/* --- Game UI Layers --- */
 #gameUI {
     position: absolute;
     top: 20px;
-    left: 20px;
-    color: #00ccff;
+    left: 0;
     pointer-events: none;
-    font-size: 24px;
-    font-weight: bold;
-    text-shadow: 0 0 10px rgba(0, 204, 255, 0.8);
     z-index: 10;
     display: none;
 }
 
-#powerUI {
-    color: #ff3300;
-    font-size: 18px;
-    margin-top: 5px;
-    display: none;
-    text-shadow: 0 0 10px #ff0000;
+/* ベースの座布団デザイン */
+.status-bar {
+    background: #000;
+    font-weight: bold;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 12px;
+    clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%);
+    /* 左からのスライドイン・アウト用設定 */
+    transform: translateX(-105%);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+    opacity: 0;
 }
 
-#yellowGiantUI {
+/* JS側で active クラスが付いた時に画面内へスライド */
+.status-bar.active {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* ラベルは少し小さく控えめに */
+.status-label {
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+/* 数値は大きく目立たせる */
+.status-value {
+    font-size: 28px;
+}
+
+/* 高度プレート (常に表示させるため transform を上書き) */
+.altitude-bar {
+    color: #00ccff;
+    padding: 5px 80px 5px 20px;
+    border-top: 3px solid #00ccff;
+    border-bottom: 3px solid #00ccff;
+    filter: drop-shadow(0 0 8px rgba(0, 204, 255, 0.6));
+    transform: translateX(0);
+    opacity: 1;
+}
+.altitude-bar .status-value { text-shadow: 0 0 10px #00ccff; }
+
+/* レッドオーラプレート */
+.aura-bar {
+    color: #ff3300;
+    padding: 5px 60px 5px 20px;
+    border-top: 3px solid #ff3300;
+    border-bottom: 3px solid #ff3300;
+    filter: drop-shadow(0 0 8px rgba(255, 51, 0, 0.6));
+}
+.aura-bar .status-value { text-shadow: 0 0 10px #ff3300; }
+
+/* イエロージャイアントプレート */
+.giant-bar {
     color: #ffff00;
-    font-size: 20px;
-    margin-top: 5px;
-    font-weight: bold;
+    padding: 5px 60px 5px 20px;
+    border-top: 3px solid #ffff00;
+    border-bottom: 3px solid #ffff00;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 0, 0.6));
+}
+.giant-bar .status-value {
     text-shadow: 0 0 14px #ffcc00, 0 0 28px #ffff00;
     animation: yellowPulse 0.6s ease-in-out infinite alternate;
 }
 
 @keyframes yellowPulse {
-    from {
-        opacity: 0.8;
-        letter-spacing: 1px;
-    }
-
-    to {
-        opacity: 1.0;
-        letter-spacing: 3px;
-    }
+    from { opacity: 0.8; letter-spacing: 0px; }
+    to { opacity: 1.0; letter-spacing: 2px; }
 }
 
-/* Screens */
+/* --- Menu Screens --- */
 .screen {
     position: absolute;
     top: 0;
@@ -89,28 +128,11 @@ canvas {
     box-shadow: 0 0 30px rgba(0, 204, 255, 0.3);
 }
 
-h1 {
-    color: #00ccff;
-    margin-top: 0;
-    text-shadow: 0 0 15px rgba(0, 204, 255, 0.5);
-}
+h1 { color: #00ccff; margin-top: 0; text-shadow: 0 0 15px rgba(0, 204, 255, 0.5); }
+h2 { color: #ffff00; margin-top: 0; }
 
-h2 {
-    color: #ffff00;
-    margin-top: 0;
-}
-
-.stat-text {
-    font-size: 20px;
-    margin: 10px 0;
-    font-weight: bold;
-}
-
-.gp-text {
-    color: #ffff00;
-    font-size: 24px;
-    text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
-}
+.stat-text { font-size: 20px; margin: 10px 0; font-weight: bold; }
+.gp-text { color: #ffff00; font-size: 24px; text-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
 
 button {
     padding: 15px 30px;
@@ -126,18 +148,8 @@ button {
     font-family: inherit;
 }
 
-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px #00ccff;
-}
-
-button:disabled {
-    background: #555;
-    color: #888;
-    cursor: not-allowed;
-    box-shadow: none;
-    transform: none;
-}
+button:hover { transform: scale(1.05); box-shadow: 0 0 15px #00ccff; }
+button:disabled { background: #555; color: #888; cursor: not-allowed; box-shadow: none; transform: none; }
 
 .shop-item {
     display: flex;
@@ -150,31 +162,10 @@ button:disabled {
     text-align: left;
 }
 
-.shop-info {
-    flex: 1;
-    padding-right: 10px;
-}
-
-.shop-title {
-    font-weight: bold;
-    font-size: 16px;
-    color: #00ccff;
-}
-
-.shop-desc {
-    font-size: 10px;
-    color: #ddd;
-    display: block;
-    margin-top: 4px;
-    line-height: 1.2;
-}
-
-.shop-btn {
-    padding: 8px 12px;
-    font-size: 14px;
-    width: 110px;
-    flex-shrink: 0;
-}
+.shop-info { flex: 1; padding-right: 10px; }
+.shop-title { font-weight: bold; font-size: 16px; color: #00ccff; }
+.shop-desc { font-size: 10px; color: #ddd; display: block; margin-top: 4px; line-height: 1.2; }
+.shop-btn { padding: 8px 12px; font-size: 14px; width: 110px; flex-shrink: 0; }
 
 .btn-group-vertical {
     display: flex;
@@ -183,8 +174,4 @@ button:disabled {
     gap: 15px;
     margin-top: 30px;
 }
-
-.btn-group-vertical button {
-    width: 240px;
-    margin: 0;
-}
+.btn-group-vertical button { width: 240px; margin: 0; }

@@ -774,52 +774,61 @@ function reflectBall(ball, line) {
     ball.firstFall = false;
 }
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if (bgImageLoaded) {
-        // 背景画像のアスペクト比を維持しつつ画面いっぱいに広げる計算
-        const canvasRatio = canvas.width / canvas.height;
-        const imgRatio = bgImage.width / bgImage.height;
-        let drawW, drawH;
-
-        if (canvasRatio > imgRatio) {
-            drawW = canvas.width;
-            drawH = canvas.width / imgRatio;
-        } else {
-            drawH = canvas.height;
-            drawW = canvas.height * imgRatio;
-        }
-
-        const progress = Math.min(1.0, maxHeight / 10000);
-        // 背景を中央に配置
-        const startX = (canvas.width - drawW) / 2;
-        // 高度に応じて背景をスクロール（下から上へ）
-        const startY = (canvas.height - drawH) + progress * (drawH - canvas.height);
-
-        // 1. 全体背景（ぼかしや暗転用）
-        ctx.drawImage(bgImage, startX, startY, drawW, drawH);
-
-        // 2. プレイエリアの強調
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(PLAY_X, 0, PLAY_W, canvas.height);
-        ctx.clip(); 
-
-        // プレイエリア内は少し明るく、または拡大して表示
-        const zoom = 1.2;
-        ctx.drawImage(bgImage, startX - (drawW * (zoom - 1)) / 2, startY - (drawH * (zoom - 1)) / 2, drawW * zoom, drawH * zoom);
-
-        ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-        ctx.fillRect(PLAY_X, 0, PLAY_W, canvas.height);
-        ctx.restore();
-    } else {
-        // 画像未ロード時のフォールバック
+function drawBackground() {
+    if (!bgImageLoaded) {
         ctx.fillStyle = "#050505";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "rgba(0, 204, 255, 0.1)";
         ctx.fillRect(PLAY_X, 0, PLAY_W, canvas.height);
+        return;
     }
+
+    const imgRatio = bgImage.width / bgImage.height;
+    const canvasRatio = canvas.width / canvas.height;
+    let drawW, drawH;
+
+    if (canvasRatio > imgRatio) {
+        drawW = canvas.width;
+        drawH = canvas.width / imgRatio;
+    } else {
+        drawH = canvas.height;
+        drawW = canvas.height * imgRatio;
+    }
+
+    const progress = Math.min(1.0, maxHeight / 10000);
+    const startX = (canvas.width - drawW) / 2;
+    const startY = (canvas.height - drawH) + progress * (drawH - canvas.height);
+
+    // 1. 全体背景
+    ctx.drawImage(bgImage, startX, startY, drawW, drawH);
+
+    // 2. プレイエリアの強調 (ズーム効果)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(PLAY_X, 0, PLAY_W, canvas.height);
+    ctx.clip(); 
+
+    // ズームの基準点をプレイエリアの中央に変更
+    const zoom = 1.35;
+    const centerX = PLAY_X + PLAY_W / 2;
+    const centerY = canvas.height / 2;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-centerX, -centerY);
+    ctx.drawImage(bgImage, startX, startY, drawW, drawH);
+    ctx.restore();
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+    ctx.fillRect(PLAY_X, 0, PLAY_W, canvas.height);
+    ctx.restore();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    drawBackground();
     
     if (currentSheetCount > 0) {
         ctx.strokeStyle = '#00ccff'; ctx.lineWidth = 20; ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 100) * 0.2;

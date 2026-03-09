@@ -38,7 +38,7 @@ const UPGRADE_DATA = {
     pierce: {
         name: "Block Pierce",
         nameJa: "ブロック貫通",
-        costs: [400, 1200, 3000, 6000, 12000, 25000],
+        costs: [400, 1200, 2500, 5000, 10000, 20000],
         max: 6,
         descs: [
             "紫を貫通(減)、赤を1回破壊(反)へ",

@@ -216,10 +216,10 @@ function resetData() {
 // --- 画像・音声 ---
 const ballImage = new Image(); ballImage.src = 'maimai.png';
 const bgImage = new Image(); bgImage.src = 'BG.png';
-let imagesLoaded = 0;
-const onImageLoad = () => { imagesLoaded++; };
-ballImage.onload = onImageLoad;
-bgImage.onload = onImageLoad;
+let ballImageLoaded = false;
+let bgImageLoaded = false;
+ballImage.onload = () => { ballImageLoaded = true; };
+bgImage.onload = () => { bgImageLoaded = true; };
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const soundBuffers = {};
@@ -377,7 +377,7 @@ let yellowGiantMode = false;
 let yellowGiantJumpDist = 0;
 let yellowGiantJumping = false;
 let yellowGiantRemainingY = 0;
-let ygScale = 1.0; // 巨大化演出用のスケール
+let ygScale = 1.0;
 
 const config = {
     ballRadius: 26, gravity: 0.22, maxSpeed: 20, baseBounce: 9, powerMultiplier: 280,
@@ -488,7 +488,6 @@ function update() {
         ball.angle += 0.15;
         yellowGiantRemainingY -= jumpSpeed;
 
-        // 徐々に巨大化する演出
         const ygLv = saveData.upgrades.yellowGiant;
         const targetScale = ygLv === 3 ? 11 : (ygLv === 2 ? 7 : 3.5);
         if (ygScale < targetScale) ygScale += (targetScale - ygScale) * 0.1;
@@ -778,25 +777,48 @@ function reflectBall(ball, line) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    if (imagesLoaded >= 2) {
-        const bgScale = Math.max(canvas.width / bgImage.width, (canvas.height * 1.5) / bgImage.height);
-        const bgW = bgImage.width * bgScale, bgH = bgImage.height * bgScale;
+    if (bgImageLoaded) {
+        // 背景画像のアスペクト比を維持しつつ画面いっぱいに広げる計算
+        const canvasRatio = canvas.width / canvas.height;
+        const imgRatio = bgImage.width / bgImage.height;
+        let drawW, drawH;
+
+        if (canvasRatio > imgRatio) {
+            drawW = canvas.width;
+            drawH = canvas.width / imgRatio;
+        } else {
+            drawH = canvas.height;
+            drawW = canvas.height * imgRatio;
+        }
+
         const progress = Math.min(1.0, maxHeight / 10000);
-        const startX = (canvas.width - bgW) / 2;
-        ctx.drawImage(bgImage, startX, (canvas.height - bgH) + progress * (bgH - canvas.height), bgW, bgH);
+        // 背景を中央に配置
+        const startX = (canvas.width - drawW) / 2;
+        // 高度に応じて背景をスクロール（下から上へ）
+        const startY = (canvas.height - drawH) + progress * (drawH - canvas.height);
+
+        // 1. 全体背景（ぼかしや暗転用）
+        ctx.drawImage(bgImage, startX, startY, drawW, drawH);
+
+        // 2. プレイエリアの強調
         ctx.save();
         ctx.beginPath();
         ctx.rect(PLAY_X, 0, PLAY_W, canvas.height);
         ctx.clip(); 
-        const zoomW = canvas.width * 3;
-        const zoomScale = zoomW / bgImage.width;
-        const zoomH = bgImage.height * zoomScale;
-        const zoomOffset = progress * (zoomH - canvas.height);
-        const zoomStartX = (canvas.width - zoomW) / 2;
-        ctx.drawImage(bgImage, zoomStartX, (canvas.height - zoomH) + zoomOffset, zoomW, zoomH);
-        ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+
+        // プレイエリア内は少し明るく、または拡大して表示
+        const zoom = 1.2;
+        ctx.drawImage(bgImage, startX - (drawW * (zoom - 1)) / 2, startY - (drawH * (zoom - 1)) / 2, drawW * zoom, drawH * zoom);
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
         ctx.fillRect(PLAY_X, 0, PLAY_W, canvas.height);
         ctx.restore();
+    } else {
+        // 画像未ロード時のフォールバック
+        ctx.fillStyle = "#050505";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "rgba(0, 204, 255, 0.1)";
+        ctx.fillRect(PLAY_X, 0, PLAY_W, canvas.height);
     }
     
     if (currentSheetCount > 0) {
@@ -942,11 +964,9 @@ function draw() {
     ctx.rotate(-moveAngle);
     ctx.rotate(ball.angle);
 
-    // ygScaleを使用して描画サイズを決定
     const ygDrawR = config.ballRadius * ygScale;
     
     if (yellowGiantMode) {
-        // アイテム取得後〜ジャンプ前の予兆オーラ
         const auraColor = yellowGiantJumping ? 'rgba(255, 220, 0,' : 'rgba(255, 255, 255,';
         const auraCount = yellowGiantJumping ? 3 : 1;
         
@@ -964,7 +984,7 @@ function draw() {
     else if (boostEffectTimer > 0) { ctx.shadowBlur = 25; ctx.shadowColor = '#ffffff'; }
     else if (yellowGiantMode) { ctx.shadowBlur = 40; ctx.shadowColor = '#ffff00'; }
     
-    if (imagesLoaded >= 1) { ctx.drawImage(ballImage, -ygDrawR, -ygDrawR, ygDrawR * 2, ygDrawR * 2); }
+    if (ballImageLoaded) { ctx.drawImage(ballImage, -ygDrawR, -ygDrawR, ygDrawR * 2, ygDrawR * 2); }
     else { ctx.fillStyle = yellowGiantMode ? '#ffff00' : '#ff3366'; ctx.beginPath(); ctx.arc(0, 0, ygDrawR, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore(); ctx.restore();
 

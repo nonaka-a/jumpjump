@@ -1,3 +1,4 @@
+// --- script.js 全コード ---
 // --- システム・セーブデータ管理 ---
 const SAVE_KEY = 'lineball_savedata_v3';
 let saveData = {
@@ -75,7 +76,6 @@ function changeState(state) {
     document.getElementById('gameUI').style.display = 'none';
     gameActive = false;
 
-    // BGM再生のためにAudioContextを確実に再開させる
     if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume();
     }
@@ -95,7 +95,6 @@ function changeState(state) {
         document.getElementById('settingsScreen').style.display = 'flex';
         updateSettingsUI();
     } else if (state === 'play') {
-        // プレイ開始時にBGMを再生
         playBGM('bgm');
         document.getElementById('gameUI').style.display = 'block';
         initGame();
@@ -273,7 +272,6 @@ function playSound(name, volume = 1.0) {
 
 function playBGM(name) {
     if (!saveData.soundEnabled) return;
-    // ロードが完了していない場合は少し待ってから再試行
     if (!soundBuffers[name]) {
         setTimeout(() => playBGM(name), 500);
         return;
@@ -379,11 +377,12 @@ let yellowGiantMode = false;
 let yellowGiantJumpDist = 0;
 let yellowGiantJumping = false;
 let yellowGiantRemainingY = 0;
+let ygScale = 1.0; // 巨大化演出用のスケール
 
 const config = {
     ballRadius: 26, gravity: 0.22, maxSpeed: 20, baseBounce: 9, powerMultiplier: 280,
     cameraLerp: 0.1, rotationDamping: 0.95, moveRotationFactor: 0.002, bounceRotationFactor: 0.03,
-    stretchFactor: 0.005, bounceThreshold: 5, boostPower: -22, parallaxSpeed: 0.005, speedLineThreshold: 28,
+    stretchFactor: 0.006, bounceThreshold: 5, boostPower: -22, parallaxSpeed: 0.005, speedLineThreshold: 28,
     particleThreshold: 8
 };
 
@@ -403,6 +402,7 @@ function initGame() {
     nextGateAlt = 500; nextBlockY = -800; nextSingleBoosterY = -300;
     currentSheetCount = saveData.upgrades.sheet || 0;
     yellowGiantMode = false; yellowGiantJumpDist = 0; yellowGiantJumping = false; yellowGiantRemainingY = 0;
+    ygScale = 1.0;
     
     document.getElementById('heightScore').textContent = "0";
     document.getElementById('powerUI').classList.remove('active');
@@ -488,11 +488,16 @@ function update() {
         ball.angle += 0.15;
         yellowGiantRemainingY -= jumpSpeed;
 
+        // 徐々に巨大化する演出
+        const ygLv = saveData.upgrades.yellowGiant;
+        const targetScale = ygLv === 3 ? 11 : (ygLv === 2 ? 7 : 3.5);
+        if (ygScale < targetScale) ygScale += (targetScale - ygScale) * 0.1;
+
         for (let i = 0; i < 6; i++) {
             particles.push(new Particle(
-                ball.x + (Math.random() - 0.5) * 50, ball.y + Math.random() * 30,
+                ball.x + (Math.random() - 0.5) * 50 * ygScale, ball.y + Math.random() * 30 * ygScale,
                 Math.random() > 0.4 ? '#ffff00' : '#ffcc00',
-                (Math.random() - 0.5) * 6, jumpSpeed * 0.4 + Math.random() * 6, 0.04, 4
+                (Math.random() - 0.5) * 6, jumpSpeed * 0.4 + Math.random() * 6, 0.04, 4 * ygScale
             ));
         }
         if (Math.random() > 0.2) speedLines.push({ x: PLAY_X + Math.random() * PLAY_W, y: -50, h: 100 + Math.random() * 150, v: 35 + Math.random() * 20 });
@@ -516,6 +521,7 @@ function update() {
             yellowGiantJumping = false;
             yellowGiantMode = false;
             yellowGiantJumpDist = 0;
+            ygScale = 1.0;
             ball.vy = -config.maxSpeed;
             ball.firstFall = false;
             document.getElementById('yellowGiantUI').classList.remove('active');
@@ -564,7 +570,7 @@ function update() {
 
     const ygLv = saveData.upgrades.yellowGiant;
     if (ygLv > 0 && spawnActive && !yellowGiantMode) {
-        if (Math.random() < 0.0006) spawnYellowItem(spawnY);
+        if (Math.random() < 0.0003) spawnYellowItem(spawnY);
     }
 
     if (cameraY < nextBlockY && spawnActive) {
@@ -638,7 +644,7 @@ function update() {
     blocks.forEach(bk => {
         if (bk.active) {
             const cx = Math.max(bk.x, Math.min(ball.x, bk.x + bk.w)), cy = Math.max(bk.y, Math.min(ball.y, bk.y + bk.h)), dist = Math.sqrt((ball.x - cx) ** 2 + (ball.y - cy) ** 2);
-            if (dist < config.ballRadius) {
+            if (dist < config.ballRadius * (yellowGiantJumping ? ygScale : 1.0)) {
                 const isPower = powerModeTimer > 0;
                 let destroyed = false;
                 let bounce = false;
@@ -647,7 +653,7 @@ function update() {
                 const levels = { purple: 0, red: 1, yellow: 2, white: 3 };
                 const bkLv = levels[bk.type] || 0;
 
-                if (isPower || pLv >= (bkLv + 2)) {
+                if (isPower || pLv >= (bkLv + 2) || yellowGiantJumping) {
                     destroyed = true; 
                 } else if (pLv === (bkLv + 1)) {
                     destroyed = true;
@@ -673,7 +679,7 @@ function update() {
                         if (bk.type === 'white') c = '#ffffff';
                         particles.push(new Particle(cx, cy, c, (Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12, 0.03, Math.random() * 4 + 2));
                     }
-                    if (pLv >= 6) {
+                    if (pLv >= 6 && !yellowGiantJumping) {
                         ball.vy = Math.min(ball.vy, -8) - 2.5; 
                         if (ball.vy < -22) ball.vy = -22;     
                         for (let i = 0; i < 8; i++) {
@@ -702,7 +708,7 @@ function update() {
         if (jLv >= 3) particles.push(new Particle(ball.x, ball.y, '#ffff00', (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, 0.08, 2));
     }
 
-    if (Math.sqrt(ball.vx ** 2 + ball.vy ** 2) > config.particleThreshold) particles.push(new Particle(ball.x, ball.y, powerModeTimer > 0 ? '#ff3300' : '#00ccff', (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3));
+    if (Math.sqrt(ball.vx ** 2 + ball.vy ** 2) > config.particleThreshold) particles.push(new Particle(ball.x, ball.y, (powerModeTimer > 0 || yellowGiantMode) ? (yellowGiantMode ? '#ffff00' : '#ff3300') : '#00ccff', (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3));
     for (let i = particles.length - 1; i >= 0; i--) { particles[i].update(); if (particles[i].life <= 0) particles.splice(i, 1); }
 
     if (currentAlt > maxHeight && maxHeight < 10000) { 
@@ -750,7 +756,8 @@ function update() {
 function checkCollision(ball, line) {
     const dx = line.x2 - line.x1, dy = line.y2 - line.y1, l2 = dx * dx + dy * dy;
     let t = Math.max(0, Math.min(1, ((ball.x - line.x1) * dx + (ball.y - line.y1) * dy) / l2));
-    return Math.sqrt(Math.pow(ball.x - (line.x1 + t * dx), 2) + Math.pow(ball.y - (line.y1 + t * dy), 2)) < config.ballRadius;
+    const currentRadius = config.ballRadius * (yellowGiantJumping ? ygScale : 1.0);
+    return Math.sqrt(Math.pow(ball.x - (line.x1 + t * dx), 2) + Math.pow(ball.y - (line.y1 + t * dy), 2)) < currentRadius;
 }
 
 function reflectBall(ball, line) {
@@ -771,52 +778,41 @@ function reflectBall(ball, line) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 背景描画
     if (imagesLoaded >= 2) {
         const bgScale = Math.max(canvas.width / bgImage.width, (canvas.height * 1.5) / bgImage.height);
         const bgW = bgImage.width * bgScale, bgH = bgImage.height * bgScale;
         const progress = Math.min(1.0, maxHeight / 10000);
         const startX = (canvas.width - bgW) / 2;
-
         ctx.drawImage(bgImage, startX, (canvas.height - bgH) + progress * (bgH - canvas.height), bgW, bgH);
-
         ctx.save();
         ctx.beginPath();
         ctx.rect(PLAY_X, 0, PLAY_W, canvas.height);
         ctx.clip(); 
-
         const zoomW = canvas.width * 3;
         const zoomScale = zoomW / bgImage.width;
         const zoomH = bgImage.height * zoomScale;
         const zoomOffset = progress * (zoomH - canvas.height);
         const zoomStartX = (canvas.width - zoomW) / 2;
-
         ctx.drawImage(bgImage, zoomStartX, (canvas.height - zoomH) + zoomOffset, zoomW, zoomH);
-
         ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
         ctx.fillRect(PLAY_X, 0, PLAY_W, canvas.height);
-
         ctx.restore();
     }
     
-    // ブルーシート
     if (currentSheetCount > 0) {
         ctx.strokeStyle = '#00ccff'; ctx.lineWidth = 20; ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 100) * 0.2;
         ctx.beginPath(); ctx.moveTo(PLAY_X, canvas.height - 30); ctx.lineTo(PLAY_X + PLAY_W, canvas.height - 30); ctx.stroke(); ctx.globalAlpha = 1.0;
     }
     
-    // スピードライン
     ctx.strokeStyle = yellowGiantJumping ? 'rgba(255, 220, 0, 0.8)' : (powerModeTimer > 0 ? 'rgba(255, 30, 0, 0.7)' : 'rgba(0, 204, 255, 0.4)'); ctx.lineWidth = yellowGiantJumping ? 4 : 3;
     speedLines.forEach(sl => { ctx.beginPath(); ctx.moveTo(sl.x, sl.y); ctx.lineTo(sl.x, sl.y + sl.h); ctx.stroke(); });
     
-    // グリッド
     ctx.strokeStyle = 'rgba(0, 204, 255, 0.1)'; ctx.lineWidth = 1;
     const gStep = 50; const sGrid = Math.floor(cameraY / gStep) * gStep;
     for (let gy = sGrid; gy < sGrid + canvas.height + gStep; gy += gStep) { ctx.beginPath(); ctx.moveTo(PLAY_X, gy - cameraY); ctx.lineTo(PLAY_X + PLAY_W, gy - cameraY); ctx.stroke(); }
     
     particles.forEach(p => p.draw(ctx, cameraY));
 
-    // 残像（ゴースト）
     ctx.save();
     ctx.translate(0, -cameraY);
     ghosts.forEach(g => {
@@ -824,7 +820,6 @@ function draw() {
         ctx.translate(g.x, g.y);
         ctx.globalAlpha = g.life * 0.4;
         ctx.fillStyle = '#ff3366';
-        // ゴーストにも伸縮を適用
         const str = 1 + g.spd * config.stretchFactor;
         ctx.rotate(Math.atan2(g.vy, g.vx));
         ctx.scale(str, 1 / str);
@@ -839,7 +834,6 @@ function draw() {
     });
     ctx.restore();
 
-    // レーザー（強発光仕様）
     lasers.forEach(l => {
         const alpha = l.life;
         const w = l.width * Math.pow(l.life, 0.5);
@@ -863,7 +857,6 @@ function draw() {
 
     ctx.save(); ctx.translate(0, -cameraY);
     
-    // ブロック
     blocks.forEach(bk => {
         if (!bk.active) return;
         const bx = bk.x, by = bk.y, bw = bk.w, bh = bk.h, bevel = 5;
@@ -892,10 +885,8 @@ function draw() {
             ctx.fillStyle = '#12005e'; ctx.beginPath(); ctx.moveTo(bx, by + bh); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw - bevel, by + bh - bevel); ctx.lineTo(bx + bevel, by + bh - bevel); ctx.fill();
             ctx.beginPath(); ctx.moveTo(bx + bw, by); ctx.lineTo(bx + bw, by + bh); ctx.lineTo(bx + bw - bevel, by + bh - bevel); ctx.lineTo(bx + bw - bevel, by + bevel); ctx.fill();
         }
-        ctx.strokeStyle = bk.type === 'white' ? 'rgba(255, 255, 255, 0.4)' : (bk.type === 'yellow' ? 'rgba(255, 255, 0, 0.2)' : (bk.type === 'red' ? 'rgba(255, 100, 100, 0.2)' : 'rgba(255, 255, 255, 0.1)'));
     });
 
-    // アイテム類
     items.forEach(it => { if (!it.active) return; ctx.fillStyle = '#ff3300'; ctx.shadowBlur = 40; ctx.shadowColor = '#ff0000'; const p = Math.sin(Date.now() / 120) * 10; ctx.beginPath(); ctx.arc(it.x, it.y, it.radius + p, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(it.x, it.y, (it.radius + p) * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; });
     
     yellowItems.forEach(it => {
@@ -915,7 +906,6 @@ function draw() {
         ctx.shadowBlur = 0;
     });
 
-    // プレイヤーが引いたライン（色変化あり）
     lines.forEach(line => { 
         if (powerModeTimer > 0) {
             ctx.strokeStyle = '#ff0000'; 
@@ -937,34 +927,37 @@ function draw() {
         ctx.shadowBlur = 0; 
     });
 
-    // 描画中の線
     if (isDrawing && startPoint && currentPoint) { ctx.strokeStyle = '#ffffff'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(startPoint.x, startPoint.y); ctx.lineTo(currentPoint.x, currentPoint.y); ctx.stroke(); ctx.setLineDash([]); }
 
     // ボール本体
     ctx.save(); ctx.translate(ball.x, ball.y);
     
-    // スピードに応じた伸縮計算 (閾値を下げ、係数を調整)
     const spd = Math.sqrt(ball.vx ** 2 + ball.vy ** 2);
     const stretch = 1 + spd * config.stretchFactor; 
     const squash = 1 / stretch; 
 
-    // 進行方向に向かって回転させてから伸縮を適用
     const moveAngle = Math.atan2(ball.vy, ball.vx);
     ctx.rotate(moveAngle);
     ctx.scale(stretch, squash);
     ctx.rotate(-moveAngle);
     ctx.rotate(ball.angle);
 
-    const ygLvDraw = saveData.upgrades.yellowGiant;
-    const ygDrawR = yellowGiantMode ? (ygLvDraw === 3 ? config.ballRadius * 11 : (ygLvDraw === 2 ? config.ballRadius * 7 : config.ballRadius * 3.5)) : config.ballRadius;
+    // ygScaleを使用して描画サイズを決定
+    const ygDrawR = config.ballRadius * ygScale;
     
     if (yellowGiantMode) {
-        for (let ri = 0; ri < 3; ri++) {
-            const pulse = Math.sin(Date.now() / 80 + ri * 1.0) * 8;
+        // アイテム取得後〜ジャンプ前の予兆オーラ
+        const auraColor = yellowGiantJumping ? 'rgba(255, 220, 0,' : 'rgba(255, 255, 255,';
+        const auraCount = yellowGiantJumping ? 3 : 1;
+        
+        for (let ri = 0; ri < auraCount; ri++) {
+            const pulse = Math.sin(Date.now() / 80 + ri * 1.0) * (yellowGiantJumping ? 8 : 4);
             ctx.beginPath(); ctx.arc(0, 0, ygDrawR + 12 + ri * 10 + pulse, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255, 220, 0, ${0.6 - ri * 0.15})`; ctx.lineWidth = 5 - ri; ctx.shadowBlur = 30; ctx.shadowColor = '#ffff00'; ctx.stroke(); ctx.shadowBlur = 0;
+            ctx.strokeStyle = `${auraColor} ${0.6 - ri * 0.15})`; ctx.lineWidth = 5 - ri; ctx.shadowBlur = 30; ctx.shadowColor = '#ffff00'; ctx.stroke(); ctx.shadowBlur = 0;
         }
-        ctx.fillStyle = 'rgba(255, 230, 0, 0.25)'; ctx.beginPath(); ctx.arc(0, 0, ygDrawR * 1.4, 0, Math.PI * 2); ctx.fill();
+        if (yellowGiantJumping) {
+            ctx.fillStyle = 'rgba(255, 230, 0, 0.25)'; ctx.beginPath(); ctx.arc(0, 0, ygDrawR * 1.4, 0, Math.PI * 2); ctx.fill();
+        }
     }
     
     if (powerModeTimer > 0) { ctx.shadowBlur = 50; ctx.shadowColor = '#ff0000'; ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'; ctx.beginPath(); ctx.arc(0, 0, config.ballRadius * 1.8, 0, Math.PI * 2); ctx.fill(); }
@@ -975,7 +968,6 @@ function draw() {
     else { ctx.fillStyle = yellowGiantMode ? '#ffff00' : '#ff3366'; ctx.beginPath(); ctx.arc(0, 0, ygDrawR, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore(); ctx.restore();
 
-    // ゴール時の白飛びエフェクト
     if (fadeToWhite > 0) {
         ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1.0, fadeToWhite)})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -990,7 +982,6 @@ function gameLoop() {
     } 
 }
 
-// 初期化
 loadData();
 updateLanguageUI();
 changeState('title');

@@ -82,9 +82,53 @@ canvas {
     text-shadow: 0 0 14px #ffcc00, 0 0 28px #ffff00;
 }
 
-.screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); z-index: 20; }
-.screen-box { background: rgba(10, 20, 20, 0.95); padding: 40px; border-radius: 20px; border: 3px solid #00ccff; text-align: center; max-width: 480px; width: 90%; box-shadow: 0 0 30px rgba(0, 204, 255, 0.3); max-height: 90vh; display: flex; flex-direction: column; }
-h1 { color: #00ccff; margin-top: 0; text-shadow: 0 0 15px rgba(0, 204, 255, 0.5); }
+.screen { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    background: rgba(0, 0, 0, 0.85); 
+    z-index: 20; 
+}
+#titleScreen, #shopScreen, #settingsScreen {
+    background: url('BG.png') no-repeat center top;
+    background-size: cover;
+    position: relative; /* 疑似要素の基準点 */
+}
+
+#titleScreen::before, #shopScreen::before, #settingsScreen::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7); /* ショップ等の視認性を考慮し、少し暗めに設定 */
+    z-index: 19; /* screen-box(21)より下、背景より上 */
+}
+#titleScreen::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: -1;
+}
+.screen-box { 
+    background: rgba(10, 20, 20, 0.95); 
+    padding: 40px; 
+    border-radius: 20px; 
+    border: 3px solid #00ccff; 
+    text-align: center; 
+    max-width: 360px; /* 480pxから360pxへ変更 */
+    width: 85%; 
+    box-shadow: 0 0 30px rgba(0, 204, 255, 0.3); 
+    max-height: 90vh; 
+    display: flex; 
+    flex-direction: column; 
+    z-index: 21;
+}h1 { color: #00ccff; margin-top: 0; text-shadow: 0 0 15px rgba(0, 204, 255, 0.5); }
 h2 { color: #ffff00; margin-top: 0; font-size: 28px; }
 .stat-text { font-size: 20px; margin: 10px 0; font-weight: bold; }
 .gp-text { color: #ffff00; font-size: 28px; text-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
@@ -127,3 +171,26 @@ button:disabled { background: #555; color: #888; cursor: not-allowed; }
 
 .btn-group-vertical { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px; }
 .btn-group-vertical button { width: 240px; margin: 0; }
+
+.title-logo {
+    width: 95%; /* 90%から95%へ拡大 */
+    max-width: 600px; /* 500pxから600pxへ拡大 */
+    height: auto;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 0 15px rgba(0, 204, 255, 0.6));
+    z-index: 21;
+}
+.screen-box { 
+    background: rgba(10, 20, 20, 0.95); 
+    padding: 40px; 
+    border-radius: 20px; 
+    border: 3px solid #00ccff; 
+    text-align: center; 
+    max-width: 300px; /* 360pxから300pxへ縮小 */
+    width: 80%; 
+    box-shadow: 0 0 30px rgba(0, 204, 255, 0.3); 
+    max-height: 90vh; 
+    display: flex; 
+    flex-direction: column; 
+    z-index: 21;
+}

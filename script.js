@@ -68,13 +68,20 @@ function saveGameData() { localStorage.setItem(SAVE_KEY, JSON.stringify(saveData
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+let endingActive = false;
+
 function changeState(state) {
     document.getElementById('titleScreen').style.display = 'none';
     document.getElementById('shopScreen').style.display = 'none';
     document.getElementById('settingsScreen').style.display = 'none';
     document.getElementById('resultScreen').style.display = 'none';
     document.getElementById('gameUI').style.display = 'none';
+    
+    const endingScreen = document.getElementById('endingScreen');
+    if (endingScreen) endingScreen.style.display = 'none';
+
     gameActive = false;
+    endingActive = false;
 
     if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume();
@@ -98,6 +105,8 @@ function changeState(state) {
         playBGM('bgm');
         document.getElementById('gameUI').style.display = 'block';
         initGame();
+    } else if (state === 'ending') {
+        startEnding();
     } else if (state === 'result') {
         document.getElementById('resultScreen').style.display = 'flex';
         const mult = saveData.upgrades.multiplier === 2 ? 2.0 : (saveData.upgrades.multiplier === 1 ? 1.5 : 1.0);
@@ -121,6 +130,39 @@ function changeState(state) {
     }
 }
 
+function startEnding() {
+    stopBGM();
+    endingActive = true;
+    const container = document.getElementById('endingTextContainer');
+    const screen = document.getElementById('endingScreen');
+    const lang = saveData.language || 'en';
+    const lines = ENDING_TEXT[lang];
+
+    container.innerHTML = lines.map(line => `<div>${line}</div>`).join('');
+    screen.style.display = 'flex';
+    
+    let scrollY = window.innerHeight;
+    container.style.top = scrollY + "px";
+
+    function animateEnding() {
+        if (!endingActive) return;
+        
+        // スクロール速度を 0.8 から 0.4 に変更（約半分のスピード）
+        scrollY -= 0.6;
+        
+        container.style.top = scrollY + "px";
+
+        // スクロール完了判定
+        if (scrollY < -container.offsetHeight - 50) {
+            endingActive = false;
+            changeState('result');
+        } else {
+            requestAnimationFrame(animateEnding);
+        }
+    }
+    requestAnimationFrame(animateEnding);
+}
+
 function updateShopUI() {
     document.getElementById('shopGp').textContent = Math.floor(saveData.gp);
     const container = document.getElementById('shopList');
@@ -138,6 +180,7 @@ function updateShopUI() {
 
         const itemEl = document.createElement('div');
         itemEl.className = 'shop-item';
+        // button class から btn-red を削除し、デフォルトのサイバーブルーに戻す
         itemEl.innerHTML = `
             <div class="shop-info">
                 <div class="shop-title">${name} [Lv ${lv}]</div>
@@ -173,12 +216,13 @@ function updateSettingsUI() {
         let soundState = saveData.soundEnabled ? 'ON' : 'OFF';
         if (saveData.language === 'ja') soundState = saveData.soundEnabled ? 'オン' : 'オフ';
         btn.textContent = saveData.language === 'ja' ? `サウンド: ${soundState}` : `SOUND: ${soundState}`;
+        
         if (saveData.soundEnabled) {
             btn.classList.remove('btn-gray');
         } else {
             btn.classList.add('btn-gray');
         }
-        btn.style.background = ""; // 万が一残っていたインラインスタイルをリセット
+        btn.style.background = "";
     }
 }
 
@@ -220,7 +264,7 @@ function resetData() {
 
 // --- 画像・音声 ---
 const ballImage = new Image(); ballImage.src = 'maimai.png';
-const bgImage = new Image(); bgImage.src = 'BG.png';
+const bgImage = new Image(); bgImage.src = 'BG.jpg';
 let ballImageLoaded = false;
 let bgImageLoaded = false;
 ballImage.onload = () => { ballImageLoaded = true; };
@@ -518,7 +562,10 @@ function update() {
 
         if (maxHeight >= 10000) {
             fadeToWhite += 0.005;
-            if (fadeToWhite >= 1.5) { changeState('result'); fadeToWhite = 0; }
+            if (fadeToWhite >= 1.5) { 
+                fadeToWhite = 0;
+                changeState('ending'); 
+            }
         }
 
         if (yellowGiantRemainingY <= 0) {
@@ -727,7 +774,10 @@ function update() {
 
     if (maxHeight >= 10000) {
         fadeToWhite += 0.005; ball.vy -= 0.6; 
-        if (fadeToWhite >= 1.5) { changeState('result'); fadeToWhite = 0; }
+        if (fadeToWhite >= 1.5) { 
+            fadeToWhite = 0;
+            changeState('ending'); 
+        }
     }
 
     if (ball.y > cameraY + canvas.height + 50 && fadeToWhite === 0) changeState('result');
@@ -840,7 +890,7 @@ function draw() {
     drawBackground();
     
     if (currentSheetCount > 0) {
-        const drawSheetY = canvas.height - 70; // 判定位置と同じ高さに設定
+        const drawSheetY = canvas.height - 70; // シートの高さを設定
         ctx.strokeStyle = '#00ccff'; 
         ctx.lineWidth = 20; 
         ctx.globalAlpha = 0.5 + Math.sin(Date.now() / 100) * 0.2;
@@ -1030,3 +1080,36 @@ function gameLoop() {
 loadData();
 updateLanguageUI();
 changeState('title');
+
+function debugWarp() {
+    if (!gameActive) return;
+
+    // 現在のカメラ(cameraY)とボール(ball.y)を9500m相当の位置に移動させる
+    // 高度の計算式: (canvas.height - 100 - ball.y) / 20 = altitude
+    // 逆算: ball.y = canvas.height - 100 - (altitude * 20)
+    
+    const targetAlt = 9500;
+    const targetY = canvas.height - 100 - (targetAlt * 20);
+
+    ball.y = targetY;
+    ball.vy = 0; // 落下速度をリセットして操作しやすくする
+    
+    // カメラも即座にボールに追従させる
+    cameraY = ball.y - canvas.height * 0.5;
+
+    // 進行状況に関連する変数を9500m相当に更新
+    maxHeight = targetAlt;
+    document.getElementById('heightScore').textContent = maxHeight;
+    
+    // ブースターやブロックの生成位置を現在地にリセット
+    nextGateAlt = 10000; 
+    nextSingleBoosterY = cameraY - 300;
+    nextBlockY = cameraY - 800;
+
+    // 画面に残っている不要なオブジェクトを消去
+    lines = [];
+    boosters = [];
+    items = [];
+    blocks = [];
+    yellowItems = [];
+}

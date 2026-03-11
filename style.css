@@ -287,3 +287,52 @@ button:disabled:hover { transform: none; box-shadow: none; --bg: rgba(85, 85, 85
 
 .btn-group-vertical { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px; }
 .btn-group-vertical button { width: 240px; margin: 0; }
+
+#endingScreen {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 50; 
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+}
+
+/* 追加: フェードイン用の白い幕 */
+#whiteFadeOverlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: white;
+    z-index: 60; /* テキストより前面 */
+    pointer-events: none; /* クリックなどを透過 */
+    animation: fadeOutWhite 3s ease-in-out forwards;
+}
+
+@keyframes fadeOutWhite {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* 修正後（既存の #endingTextContainer はそのまま、子要素の div 設定を追加・修正） */
+#endingTextContainer {
+    position: absolute;
+    top: 100%; 
+    width: 80%;
+    max-width: 600px;
+    text-align: center;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    line-height: 2; /* 行間を広めに取る */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), 0 0 10px rgba(0, 204, 255, 0.5);
+    padding-bottom: 50px;
+    z-index: 51; 
+}
+
+/* 追加: 各行（div）のレイアウト設定 */
+#endingTextContainer div {
+    /* 長い文章（英語など）が画面幅で自動的に折り返されるようにする */
+    white-space: pre-wrap;
+    word-break: break-word;
+    /* 空行（""）の場合でも、1行分の高さを確保して空間をあける */
+    min-height: 2rem;
+}

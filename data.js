@@ -105,3 +105,38 @@ const I18N = {
     retry: { en: "RETRY", ja: "リトライ" },
     titleBtn: { en: "TITLE", ja: "タイトルへもどる" }
 };
+
+
+const ENDING_TEXT = {
+    ja: [
+        "キラキラと輝くネオン。空を飛ぶ車。たくさんのロケットや宇宙船。",
+        "",
+        "そんな見慣れぬ世界に圧倒されつつも",
+        "まいまいはジャンプして！ジャンプして！ジャンプして！！",
+        "ついにサイバーパンクな星を飛び出しました。",
+        "",
+        "「ふぅ……これで、なんとかおうちに帰れるぞ。",
+        "大変だったけど、ピョンピョン飛ぶのは楽しかったし、",
+        "キラキラがいっぱいでステキなところだったなぁ」",
+        "",
+        "まいまいがおうちに帰ったら、また新しい冒険が待っています。",
+        "でも、それはまた別のお話。",
+        "",
+        "MAIMAI JUMP JUMP!",
+        "Thank you for playing!"
+    ],
+    en: [
+        "Shimmering neon lights. Flying cars. Countless rockets and spaceships.",
+        "",
+        "Overwhelmed by this unfamiliar world, Maimai jumped, and jumped, and jumped! At last, she soared beyond the cyberpunk star.",
+        "",
+        "\"Whew... now I can finally go home. It was a long journey, but hopping around was so much fun! And this place was so sparkly and beautiful.\"",
+        "",
+        "Once Maimai returns home, a new adventure awaits. But that is a story for another time.",
+        "",
+        "Thank you for playing MAIMAI JUMP JUMP!"
+    ]
+};
+
+// I18Nのgoalを「クリア！」に変更
+I18N.goal = { en: "CLEAR!!", ja: "クリア!!" };

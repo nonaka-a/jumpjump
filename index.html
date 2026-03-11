@@ -21,6 +21,8 @@
 
     <!-- ゲーム中UI -->
     <div id="gameUI">
+    <!-- デバッグボタン (右上に固定) -->
+    <button id="debugWarpBtn" onclick="debugWarp()" style="position: absolute; top: 10px; right: 10px; padding: 10px; font-size: 12px; z-index: 100; pointer-events: auto;">WARP 9500m</button>
     <!-- 高度プレート -->
     <div class="status-bar altitude-bar cyber-ui-plate">
         <span class="status-label" data-i18n="altitude">ALTITUDE:</span>
@@ -93,6 +95,11 @@
             <button onclick="changeState('title')" style="margin-top: 20px; width: 220px;" data-i18n="backToTitle">BACK TO TITLE</button>
         </div>
     </div>
+
+<div id="endingScreen" class="screen" style="display: none; background: url('end_BG.jpg') no-repeat center center; background-size: cover;">
+    <div id="whiteFadeOverlay"></div> <!-- 白い幕 -->
+    <div id="endingTextContainer"></div>
+</div>
 
     <!-- リザルト画面 -->
     <div id="resultScreen" class="screen" style="display: none;">

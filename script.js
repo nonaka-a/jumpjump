@@ -132,6 +132,8 @@ function changeState(state) {
 
 function startEnding() {
     stopBGM();
+    playBGM('bgm_end'); // エンディング用BGMを再生
+    
     endingActive = true;
     const container = document.getElementById('endingTextContainer');
     const screen = document.getElementById('endingScreen');
@@ -147,14 +149,12 @@ function startEnding() {
     function animateEnding() {
         if (!endingActive) return;
         
-        // スクロール速度を 0.8 から 0.4 に変更（約半分のスピード）
         scrollY -= 0.6;
-        
         container.style.top = scrollY + "px";
 
-        // スクロール完了判定
         if (scrollY < -container.offsetHeight - 50) {
             endingActive = false;
+            stopBGM(); // エンディングが終了したらBGMを止める
             changeState('result');
         } else {
             requestAnimationFrame(animateEnding);
@@ -387,6 +387,7 @@ loadSound('jump', 'jump2.mp3');
 loadSound('energy', 'energy.mp3');
 loadSound('bgm', 'BGM.mp3');
 loadSound('bgm2', 'BGM2.mp3');
+loadSound('bgm_end', 'BGM_end.mp3'); // 追加：エンディング用BGM
 loadSound('dest1', 'block_destruction1.mp3');
 loadSound('dest2', 'block_destruction2.mp3');
 loadSound('flameburst', 'Flames_burst.mp3');

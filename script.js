@@ -437,6 +437,18 @@ const config = {
 };
 
 function initGame() {
+    // スマホでのBGM再生制限を解除するためのダミー再生
+    // プレイ開始ボタン（ユーザーの操作）をきっかけに実行される initGame 内で行う
+    if (saveData.soundEnabled && soundBuffers['bgm_end']) {
+        const unlockSource = audioCtx.createBufferSource();
+        unlockSource.buffer = soundBuffers['bgm_end'];
+        const silentGain = audioCtx.createGain();
+        silentGain.gain.value = 0; // 無音
+        unlockSource.connect(silentGain);
+        silentGain.connect(audioCtx.destination);
+        unlockSource.start(0);
+        unlockSource.stop(0.01); // 一瞬で止める
+    }
     ball = {
         x: canvas.width / 2,
         y: canvas.height * 0.6,

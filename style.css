@@ -90,7 +90,7 @@ canvas {
 }
 
 #titleScreen, #shopScreen, #settingsScreen {
-    background: url('BG.png') no-repeat center top;
+    background: url('BG.jpg') no-repeat center top; /* .png から .jpg へ変更 */
     background-size: cover;
     position: relative;
 }

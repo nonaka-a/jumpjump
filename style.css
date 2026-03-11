@@ -31,17 +31,60 @@ canvas {
 }
 
 .status-bar {
-    background: #000;
+    position: relative;
     font-weight: bold;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 12px;
-    margin-bottom: 12px;
-    clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%);
-    transform: translateX(-105%);
+    margin-bottom: 15px;
+    margin-left: 20px; /* 装飾のL字が画面端に隠れないように */
+    transform: translateX(-110%);
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
     opacity: 0;
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.6), transparent); /* 背景を少し暗くして視認性確保 */
+    padding: 5px 40px 5px 15px;
 }
+
+.status-bar.active, .altitude-bar {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+/* ゲーム中UI用の共通サイバー装飾 */
+.cyber-ui-plate {
+    border-top: 1px solid currentColor;
+    border-bottom: 1px solid currentColor;
+}
+
+.cyber-ui-plate::before {
+    content: "";
+    position: absolute;
+    width: 6px;
+    height: 100%;
+    top: 0;
+    left: -10px;
+    border-top: 3px solid currentColor;
+    border-bottom: 3px solid currentColor;
+    border-left: 3px solid currentColor;
+    filter: drop-shadow(0 0 5px currentColor);
+}
+
+/* 各カラー設定（既存の色のまま装飾に適用） */
+.altitude-bar { 
+    color: #00ccff; 
+    border-color: rgba(0, 204, 255, 0.5);
+}
+.aura-bar { 
+    color: #ff3300; 
+    border-color: rgba(255, 51, 0, 0.5);
+}
+.giant-bar { 
+    color: #ffff00; 
+    border-color: rgba(255, 255, 0, 0.5);
+}
+
+.status-label { font-size: 14px; opacity: 0.9; }
+.status-value { font-size: 22px; text-shadow: 0 0 10px currentColor; }
 
 .status-bar.active {
     transform: translateX(0);
@@ -51,15 +94,7 @@ canvas {
 .status-label { font-size: 16px; opacity: 0.9; }
 .status-value { font-size: 28px; }
 
-.altitude-bar {
-    color: #00ccff;
-    padding: 5px 80px 5px 20px;
-    border-top: 3px solid #00ccff;
-    border-bottom: 3px solid #00ccff;
-    filter: drop-shadow(0 0 8px rgba(0, 204, 255, 0.6));
-    transform: translateX(0);
-    opacity: 1;
-}
+
 .altitude-bar .status-value { text-shadow: 0 0 10px #00ccff; }
 
 .aura-bar {
@@ -130,7 +165,60 @@ canvas {
     z-index: 21;
 }h1 { color: #00ccff; margin-top: 0; text-shadow: 0 0 15px rgba(0, 204, 255, 0.5); }
 h2 { color: #ffff00; margin-top: 0; font-size: 28px; }
-.stat-text { font-size: 20px; margin: 10px 0; font-weight: bold; }
+.cyber-stat-container {
+    position: relative;
+    margin: 10px 0; /* 20px から 10px に縮小 */
+    padding: 5px 0;  /* 10px から 5px に縮小 */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    border-top: 1px solid rgba(0, 204, 255, 0.4);
+    border-bottom: 1px solid rgba(0, 204, 255, 0.4);
+    background: linear-gradient(90deg, transparent, rgba(0, 204, 255, 0.05), transparent);
+}
+
+/* 追加：h2がコンテナ内で余計な余白を持たないようにする */
+.cyber-stat-container h2 {
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* 左右のL字型装飾 */
+.cyber-stat-container::before, .cyber-stat-container::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 100%;
+    top: 0;
+    border-top: 3px solid #00ccff;
+    border-bottom: 3px solid #00ccff;
+    box-shadow: 0 0 10px rgba(0, 204, 255, 0.8);
+}
+
+.cyber-stat-container::before {
+    left: -15px;
+    border-left: 3px solid #00ccff;
+}
+
+.cyber-stat-container::after {
+    right: -15px;
+    border-right: 3px solid #00ccff;
+}
+
+.stat-text { 
+    font-size: 18px; 
+    margin: 0; 
+    font-weight: bold; 
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+/* GPテキストの調整 */
+.gp-text { 
+    font-size: 24px; /* 装飾に合わせて微調整 */
+}
 .gp-text { color: #ffff00; font-size: 28px; text-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
 /* 修正前（前回提示した部分を丸ごと置き換え） */
 

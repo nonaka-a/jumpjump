@@ -21,29 +21,32 @@
 
     <!-- ゲーム中UI -->
     <div id="gameUI">
-        <!-- 高度プレート -->
-        <div class="status-bar altitude-bar">
-            <span class="status-label" data-i18n="altitude">ALTITUDE:</span>
-            <span class="status-value"><span id="heightScore">0</span>m</span>
-        </div>
-        <!-- レッドオーラプレート -->
-        <div id="powerUI" class="status-bar aura-bar">
-            <span class="status-label" data-i18n="redAura">RED AURA:</span>
-            <span class="status-value"><span id="timer">10</span>s</span>
-        </div>
-        <!-- イエロージャイアントプレート -->
-        <div id="yellowGiantUI" class="status-bar giant-bar">
-            <span class="status-value" data-i18n="yellowGiant">YELLOW GIANT!</span>
-        </div>
+    <!-- 高度プレート -->
+    <div class="status-bar altitude-bar cyber-ui-plate">
+        <span class="status-label" data-i18n="altitude">ALTITUDE:</span>
+        <span class="status-value"><span id="heightScore">0</span>m</span>
     </div>
+    <!-- レッドオーラプレート -->
+    <div id="powerUI" class="status-bar aura-bar cyber-ui-plate">
+        <span class="status-label" data-i18n="redAura">RED AURA:</span>
+        <span class="status-value"><span id="timer">10</span>s</span>
+    </div>
+    <!-- イエロージャイアントプレート -->
+    <div id="yellowGiantUI" class="status-bar giant-bar cyber-ui-plate">
+        <span class="status-value" data-i18n="yellowGiant">YELLOW GIANT!</span>
+    </div>
+</div>
 
     <!-- タイトル画面 -->
     <div id="titleScreen" class="screen">
     <img src="logo.png" alt="MAIMAI JUMP JUMP!" class="title-logo">
     <div class="screen-box">
-        <div class="stat-text"><span data-i18n="highScore">HIGH SCORE:</span> <span id="titleHigh">0</span> m</div>
-        <div class="stat-text gp-text"><span data-i18n="totalGp">TOTAL GP:</span> <span id="titleGp">0</span></div>
-        <div class="btn-group-vertical">
+<div class="cyber-stat-container">
+    <div class="stat-text"><span data-i18n="highScore">HIGH SCORE:</span> <span id="titleHigh">0</span> m</div>
+</div>
+<div class="cyber-stat-container">
+    <div class="stat-text gp-text"><span data-i18n="totalGp">TOTAL GP:</span> <span id="titleGp">0</span></div>
+</div>        <div class="btn-group-vertical">
             <button class="btn-red" onclick="changeState('play')" data-i18n="jumpStart">JUMP (START)</button>
             <button onclick="changeState('shop')" data-i18n="shop">SHOP</button>
             <button onclick="changeState('settings')" data-i18n="settings">SETTINGS</button>
@@ -69,10 +72,15 @@
     <!-- ショップ画面 -->
     <div id="shopScreen" class="screen" style="display: none;">
         <div class="screen-box" style="padding: 20px; max-width: 450px;">
-            <h2 data-i18n="upgradeShop">UPGRADE SHOP</h2>
-            <div class="stat-text gp-text" style="margin-bottom: 20px;">GP: <span id="shopGp">0</span></div>
+    <div class="cyber-stat-container" style="margin-bottom: 15px;">
+    <h2 data-i18n="upgradeShop" style="margin: 0; font-size: 22px;">UPGRADE SHOP</h2>
+</div>
 
-            <div id="shopList">
+<div class="cyber-stat-container" style="margin-bottom: 15px;">
+    <div class="stat-text gp-text">GP: <span id="shopGp">0</span></div>
+</div>
+
+    <div id="shopList">
                 <!-- JavaScriptで動的に生成されます -->
             </div>
 
@@ -83,17 +91,27 @@
 
     <!-- リザルト画面 -->
     <div id="resultScreen" class="screen" style="display: none;">
-        <div class="screen-box">
-            <h1 id="resultTitle" data-i18n="gameOver">GAME OVER</h1>
-            <div class="stat-text"><span data-i18n="reached">Reached:</span> <span id="resultHeight">0</span> m</div>
-            <div class="stat-text gp-text"><span data-i18n="earnedGp">Earned GP:</span> +<span
-                    id="resultEarned">0</span></div>
-            <div class="btn-group-vertical">
-                <button class="btn-red" onclick="changeState('play')" data-i18n="retry">RETRY</button>
-                <button onclick="changeState('title')" data-i18n="titleBtn">TITLE</button>
+    <div class="screen-box">
+        <h1 id="resultTitle" data-i18n="gameOver" style="margin-bottom: 20px;">GAME OVER</h1>
+        
+        <div class="cyber-stat-container" style="margin-bottom: 10px;">
+            <div class="stat-text">
+                <span data-i18n="reached">Reached:</span> <span id="resultHeight">0</span> m
             </div>
         </div>
+
+        <div class="cyber-stat-container" style="margin-bottom: 20px;">
+            <div class="stat-text gp-text">
+                <span data-i18n="earnedGp">Earned GP:</span> +<span id="resultEarned">0</span>
+            </div>
+        </div>
+
+        <div class="btn-group-vertical" style="margin-top: 10px;">
+            <button class="btn-red" onclick="changeState('play')" data-i18n="retry">RETRY</button>
+            <button onclick="changeState('title')" data-i18n="titleBtn">TITLE</button>
+        </div>
     </div>
+</div>
 
     <canvas id="gameCanvas"></canvas>
 

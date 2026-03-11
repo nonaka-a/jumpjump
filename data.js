@@ -24,8 +24,8 @@ const UPGRADE_DATA = {
         ]
     },
     aura: {
-        name: "Power Aura",
-        nameJa: "パワーオーラ",
+        name: "Red Aura",
+        nameJa: "レッドオーラ",
         costs: [1200, 3500, 7500],
         max: 3,
         descs: [

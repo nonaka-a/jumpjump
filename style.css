@@ -37,11 +37,11 @@ canvas {
     align-items: center;
     gap: 12px;
     margin-bottom: 15px;
-    margin-left: 20px; /* 装飾のL字が画面端に隠れないように */
+    margin-left: 20px;
     transform: translateX(-110%);
     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
     opacity: 0;
-    background: linear-gradient(90deg, rgba(0, 0, 0, 0.6), transparent); /* 背景を少し暗くして視認性確保 */
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.6), transparent);
     padding: 5px 40px 5px 15px;
 }
 
@@ -50,7 +50,6 @@ canvas {
     opacity: 1;
 }
 
-/* ゲーム中UI用の共通サイバー装飾 */
 .cyber-ui-plate {
     border-top: 1px solid currentColor;
     border-bottom: 1px solid currentColor;
@@ -69,53 +68,12 @@ canvas {
     filter: drop-shadow(0 0 5px currentColor);
 }
 
-/* 各カラー設定（既存の色のまま装飾に適用） */
-.altitude-bar { 
-    color: #00ccff; 
-    border-color: rgba(0, 204, 255, 0.5);
-}
-.aura-bar { 
-    color: #ff3300; 
-    border-color: rgba(255, 51, 0, 0.5);
-}
-.giant-bar { 
-    color: #ffff00; 
-    border-color: rgba(255, 255, 0, 0.5);
-}
+.altitude-bar { color: #00ccff; border-color: rgba(0, 204, 255, 0.5); }
+.aura-bar { color: #ff3300; border-color: rgba(255, 51, 0, 0.5); }
+.giant-bar { color: #ffff00; border-color: rgba(255, 255, 0, 0.5); }
 
 .status-label { font-size: 14px; opacity: 0.9; }
 .status-value { font-size: 22px; text-shadow: 0 0 10px currentColor; }
-
-.status-bar.active {
-    transform: translateX(0);
-    opacity: 1;
-}
-
-.status-label { font-size: 16px; opacity: 0.9; }
-.status-value { font-size: 28px; }
-
-
-.altitude-bar .status-value { text-shadow: 0 0 10px #00ccff; }
-
-.aura-bar {
-    color: #ff3300;
-    padding: 5px 60px 5px 20px;
-    border-top: 3px solid #ff3300;
-    border-bottom: 3px solid #ff3300;
-    filter: drop-shadow(0 0 8px rgba(255, 51, 0, 0.6));
-}
-.aura-bar .status-value { text-shadow: 0 0 10px #ff3300; }
-
-.giant-bar {
-    color: #ffff00;
-    padding: 5px 60px 5px 20px;
-    border-top: 3px solid #ffff00;
-    border-bottom: 3px solid #ffff00;
-    filter: drop-shadow(0 0 8px rgba(255, 255, 0, 0.6));
-}
-.giant-bar .status-value {
-    text-shadow: 0 0 14px #ffcc00, 0 0 28px #ffff00;
-}
 
 .screen { 
     position: absolute; 
@@ -130,45 +88,72 @@ canvas {
     background: rgba(0, 0, 0, 0.85); 
     z-index: 20; 
 }
+
 #titleScreen, #shopScreen, #settingsScreen {
     background: url('BG.png') no-repeat center top;
     background-size: cover;
-    position: relative; /* 疑似要素の基準点 */
+    position: relative;
 }
 
 #titleScreen::before, #shopScreen::before, #settingsScreen::before {
     content: "";
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.7); /* ショップ等の視認性を考慮し、少し暗めに設定 */
-    z-index: 19; /* screen-box(21)より下、背景より上 */
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 19;
 }
-#titleScreen::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: -1;
+
+#titleScreen::before { background: rgba(0, 0, 0, 0.6); z-index: -1; }
+
+.title-logo {
+    width: 95%;
+    max-width: 600px;
+    height: auto;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 0 15px rgba(0, 204, 255, 0.6));
+    z-index: 21;
 }
+
+/* メインウィンドウ：上下実線、左右カスタム点線 */
 .screen-box { 
-    background: rgba(10, 20, 20, 0.95); 
-    padding: 40px; 
-    border-radius: 20px; 
-    border: 3px solid #00ccff; 
+    position: relative;
+    background: rgba(5, 15, 20, 0.95); 
+    padding: 30px; 
+    border-radius: 0; 
+    border-top: 2px solid #00ccff;
+    border-bottom: 2px solid #00ccff;
+    border-left: none;
+    border-right: none;
+    background-image: 
+        linear-gradient(to bottom, #00ccff 50%, transparent 50%),
+        linear-gradient(to bottom, #00ccff 50%, transparent 50%),
+        linear-gradient(rgba(5, 15, 20, 0.95), rgba(5, 15, 20, 0.95));
+    background-position: left, right, center;
+    background-size: 2px 10px, 2px 10px, 100% 100%;
+    background-repeat: repeat-y, repeat-y, no-repeat;
     text-align: center; 
-    max-width: 360px; /* 480pxから360pxへ変更 */
-    width: 85%; 
-    box-shadow: 0 0 30px rgba(0, 204, 255, 0.3); 
+    max-width: 300px; 
+    width: 80%; 
+    box-shadow: inset 0 0 20px rgba(0, 204, 255, 0.1), 0 0 30px rgba(0, 204, 255, 0.2); 
     max-height: 90vh; 
     display: flex; 
     flex-direction: column; 
     z-index: 21;
-}h1 { color: #00ccff; margin-top: 0; text-shadow: 0 0 15px rgba(0, 204, 255, 0.5); }
+    overflow: visible; 
+}
+
+.corner-tl { position: absolute; top: -2px; left: -2px; width: 25px; height: 25px; border-top: 5px solid #00ccff; border-left: 5px solid #00ccff; filter: drop-shadow(0 0 8px #00ccff); pointer-events: none; z-index: 22; }
+.corner-tr { position: absolute; top: -2px; right: -2px; width: 25px; height: 25px; border-top: 5px solid #00ccff; border-right: 5px solid #00ccff; filter: drop-shadow(0 0 8px #00ccff); pointer-events: none; z-index: 22; }
+.corner-bl { position: absolute; bottom: -2px; left: -2px; width: 25px; height: 25px; border-bottom: 5px solid #00ccff; border-left: 5px solid #00ccff; filter: drop-shadow(0 0 8px #00ccff); pointer-events: none; z-index: 22; }
+.corner-br { position: absolute; bottom: -2px; right: -2px; width: 25px; height: 25px; border-bottom: 5px solid #00ccff; border-right: 5px solid #00ccff; filter: drop-shadow(0 0 8px #00ccff); pointer-events: none; z-index: 22; }
+
+h1 { color: #00ccff; margin-top: 0; text-shadow: 0 0 15px rgba(0, 204, 255, 0.5); }
 h2 { color: #ffff00; margin-top: 0; font-size: 28px; }
+
 .cyber-stat-container {
     position: relative;
-    margin: 10px 0; /* 20px から 10px に縮小 */
-    padding: 5px 0;  /* 10px から 5px に縮小 */
+    margin: 10px 0;
+    padding: 5px 0;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -179,13 +164,11 @@ h2 { color: #ffff00; margin-top: 0; font-size: 28px; }
     background: linear-gradient(90deg, transparent, rgba(0, 204, 255, 0.05), transparent);
 }
 
-/* 追加：h2がコンテナ内で余計な余白を持たないようにする */
 .cyber-stat-container h2 {
     margin: 0;
     line-height: 1.2;
 }
 
-/* 左右のL字型装飾 */
 .cyber-stat-container::before, .cyber-stat-container::after {
     content: "";
     position: absolute;
@@ -197,15 +180,8 @@ h2 { color: #ffff00; margin-top: 0; font-size: 28px; }
     box-shadow: 0 0 10px rgba(0, 204, 255, 0.8);
 }
 
-.cyber-stat-container::before {
-    left: -15px;
-    border-left: 3px solid #00ccff;
-}
-
-.cyber-stat-container::after {
-    right: -15px;
-    border-right: 3px solid #00ccff;
-}
+.cyber-stat-container::before { left: -15px; border-left: 3px solid #00ccff; }
+.cyber-stat-container::after { right: -15px; border-right: 3px solid #00ccff; }
 
 .stat-text { 
     font-size: 18px; 
@@ -215,20 +191,14 @@ h2 { color: #ffff00; margin-top: 0; font-size: 28px; }
     text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
-/* GPテキストの調整 */
-.gp-text { 
-    font-size: 24px; /* 装飾に合わせて微調整 */
-}
-.gp-text { color: #ffff00; font-size: 28px; text-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
-/* 修正前（前回提示した部分を丸ごと置き換え） */
+.gp-text { color: #ffff00; font-size: 24px; text-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
 
-/* 修正後 */
 button { 
     position: relative;
     padding: 15px 30px; 
     font-size: 18px; 
     cursor: pointer; 
-    color: #ffffff; /* 白文字 */
+    color: #ffffff;
     font-weight: bold; 
     transition: 0.2s; 
     font-family: inherit; 
@@ -236,35 +206,25 @@ button {
     border: none;
     border-radius: 0;
     
-    /* 変数で色とサイズを管理 */
-    --c: #00ccff; /* メインカラー（枠線や三角） */
-    --bg: rgba(0, 204, 255, 0.15); /* 背景色 */
-    --cut: 15px; /* 斜めカットのサイズ */
-    --tri: 14px; /* 三角形のサイズ */
-    --bw: 2px; /* 枠線の太さ */
+    --c: #00ccff;
+    --bg: rgba(0, 204, 255, 0.15);
+    --cut: 15px;
+    --tri: 14px;
+    --bw: 2px;
     
     background: 
-        /* 1. 左上と右下の装飾三角形 */
         linear-gradient(135deg, var(--c) 50%, transparent 50%) top left / var(--tri) var(--tri) no-repeat,
         linear-gradient(-45deg, var(--c) 50%, transparent 50%) bottom right / var(--tri) var(--tri) no-repeat,
-        
-        /* 2. 左上と右下の斜め枠線 */
         linear-gradient(135deg, transparent calc(var(--cut) - var(--bw)), var(--c) calc(var(--cut) - var(--bw)), var(--c) var(--cut), transparent var(--cut)) top left / var(--cut) var(--cut) no-repeat,
         linear-gradient(-45deg, transparent calc(var(--cut) - var(--bw)), var(--c) calc(var(--cut) - var(--bw)), var(--c) var(--cut), transparent var(--cut)) bottom right / var(--cut) var(--cut) no-repeat,
-        
-        /* 3. 左下と右上の直角枠線（L字） */
         linear-gradient(to right, var(--c) var(--bw), transparent var(--bw)) bottom left / var(--cut) var(--cut) no-repeat,
         linear-gradient(to top, var(--c) var(--bw), transparent var(--bw)) bottom left / var(--cut) var(--cut) no-repeat,
         linear-gradient(to left, var(--c) var(--bw), transparent var(--bw)) top right / var(--cut) var(--cut) no-repeat,
         linear-gradient(to bottom, var(--c) var(--bw), transparent var(--bw)) top right / var(--cut) var(--cut) no-repeat,
-
-        /* 4. 上下左右の直線枠線（四隅の var(--cut) 分を空けて引く） */
         linear-gradient(to right, var(--c), var(--c)) top center / calc(100% - var(--cut)*2) var(--bw) no-repeat,
         linear-gradient(to right, var(--c), var(--c)) bottom center / calc(100% - var(--cut)*2) var(--bw) no-repeat,
         linear-gradient(to bottom, var(--c), var(--c)) left center / var(--bw) calc(100% - var(--cut)*2) no-repeat,
         linear-gradient(to bottom, var(--c), var(--c)) right center / var(--bw) calc(100% - var(--cut)*2) no-repeat,
-        
-        /* 5. 全体の半透明背景（左右半分ずつ描画し、左上と右下だけカットする） */
         linear-gradient(135deg, transparent var(--cut), var(--bg) var(--cut)) top left / 50% 100% no-repeat,
         linear-gradient(-45deg, transparent var(--cut), var(--bg) var(--cut)) bottom right / 50% 100% no-repeat;
         
@@ -277,40 +237,15 @@ button:hover {
     box-shadow: 0 0 15px rgba(0, 204, 255, 0.6); 
 }
 
-/* --- 色違いのクラス（赤） --- */
-.btn-red {
-    --c: #ff3366;
-    --bg: rgba(255, 51, 102, 0.15);
-}
-.btn-red:hover { 
-    --bg: rgba(255, 51, 102, 0.3); 
-    box-shadow: 0 0 15px rgba(255, 51, 102, 0.6); 
-}
+.btn-red { --c: #ff3366; --bg: rgba(255, 51, 102, 0.15); }
+.btn-red:hover { --bg: rgba(255, 51, 102, 0.3); box-shadow: 0 0 15px rgba(255, 51, 102, 0.6); }
 
-/* --- 色違いのクラス（グレー） --- */
-.btn-gray {
-    --c: #888888;
-    --bg: rgba(102, 102, 102, 0.2);
-    color: #cccccc;
-}
-.btn-gray:hover { 
-    --bg: rgba(102, 102, 102, 0.4); 
-    box-shadow: 0 0 15px rgba(102, 102, 102, 0.6); 
-}
+.btn-gray { --c: #888888; --bg: rgba(102, 102, 102, 0.2); color: #cccccc; }
+.btn-gray:hover { --bg: rgba(102, 102, 102, 0.4); box-shadow: 0 0 15px rgba(102, 102, 102, 0.6); }
 
-/* 無効化時 */
-button:disabled { 
-    --c: #555555;
-    --bg: rgba(85, 85, 85, 0.1);
-    color: #777777; 
-    cursor: not-allowed; 
-}
-button:disabled:hover { 
-    transform: none; 
-    box-shadow: none; 
-    --bg: rgba(85, 85, 85, 0.1);
-}
-/* ショップリストのスクロール対応 */
+button:disabled { --c: #555555; --bg: rgba(85, 85, 85, 0.1); color: #777777; cursor: not-allowed; }
+button:disabled:hover { transform: none; box-shadow: none; --bg: rgba(85, 85, 85, 0.1); }
+
 #shopList {
     overflow-y: auto;
     flex: 1;
@@ -319,14 +254,13 @@ button:disabled:hover {
     text-align: left;
 }
 
-/* スクロールバーの見た目調整 */
 #shopList::-webkit-scrollbar { width: 8px; }
 #shopList::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
 #shopList::-webkit-scrollbar-thumb { background: #00ccff; border-radius: 4px; }
 
 .shop-item { 
     display: flex; 
-    flex-direction: column; /* 縦並びにして幅を確保 */
+    flex-direction: column; 
     background: rgba(255, 255, 255, 0.08); 
     padding: 16px; 
     margin-bottom: 15px; 
@@ -339,32 +273,9 @@ button:disabled:hover {
 .shop-btn { 
     padding: 12px; 
     font-size: 18px; 
-    width: 100%; /* ボタンを横いっぱいに */
+    width: 100%; 
     border-radius: 8px;
 }
 
 .btn-group-vertical { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px; }
 .btn-group-vertical button { width: 240px; margin: 0; }
-
-.title-logo {
-    width: 95%; /* 90%から95%へ拡大 */
-    max-width: 600px; /* 500pxから600pxへ拡大 */
-    height: auto;
-    margin-bottom: 20px;
-    filter: drop-shadow(0 0 15px rgba(0, 204, 255, 0.6));
-    z-index: 21;
-}
-.screen-box { 
-    background: rgba(10, 20, 20, 0.95); 
-    padding: 40px; 
-    border-radius: 20px; 
-    border: 3px solid #00ccff; 
-    text-align: center; 
-    max-width: 300px; /* 360pxから300pxへ縮小 */
-    width: 80%; 
-    box-shadow: 0 0 30px rgba(0, 204, 255, 0.3); 
-    max-height: 90vh; 
-    display: flex; 
-    flex-direction: column; 
-    z-index: 21;
-}

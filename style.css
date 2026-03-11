@@ -132,10 +132,96 @@ canvas {
 h2 { color: #ffff00; margin-top: 0; font-size: 28px; }
 .stat-text { font-size: 20px; margin: 10px 0; font-weight: bold; }
 .gp-text { color: #ffff00; font-size: 28px; text-shadow: 0 0 10px rgba(255, 255, 0, 0.5); }
-button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #00ccff; color: #000; border: none; border-radius: 50px; font-weight: bold; transition: 0.2s; font-family: inherit; }
-button:hover { transform: scale(1.05); box-shadow: 0 0 15px #00ccff; }
-button:disabled { background: #555; color: #888; cursor: not-allowed; }
+/* 修正前（前回提示した部分を丸ごと置き換え） */
 
+/* 修正後 */
+button { 
+    position: relative;
+    padding: 15px 30px; 
+    font-size: 18px; 
+    cursor: pointer; 
+    color: #ffffff; /* 白文字 */
+    font-weight: bold; 
+    transition: 0.2s; 
+    font-family: inherit; 
+    letter-spacing: 1px;
+    border: none;
+    border-radius: 0;
+    
+    /* 変数で色とサイズを管理 */
+    --c: #00ccff; /* メインカラー（枠線や三角） */
+    --bg: rgba(0, 204, 255, 0.15); /* 背景色 */
+    --cut: 15px; /* 斜めカットのサイズ */
+    --tri: 14px; /* 三角形のサイズ */
+    --bw: 2px; /* 枠線の太さ */
+    
+    background: 
+        /* 1. 左上と右下の装飾三角形 */
+        linear-gradient(135deg, var(--c) 50%, transparent 50%) top left / var(--tri) var(--tri) no-repeat,
+        linear-gradient(-45deg, var(--c) 50%, transparent 50%) bottom right / var(--tri) var(--tri) no-repeat,
+        
+        /* 2. 左上と右下の斜め枠線 */
+        linear-gradient(135deg, transparent calc(var(--cut) - var(--bw)), var(--c) calc(var(--cut) - var(--bw)), var(--c) var(--cut), transparent var(--cut)) top left / var(--cut) var(--cut) no-repeat,
+        linear-gradient(-45deg, transparent calc(var(--cut) - var(--bw)), var(--c) calc(var(--cut) - var(--bw)), var(--c) var(--cut), transparent var(--cut)) bottom right / var(--cut) var(--cut) no-repeat,
+        
+        /* 3. 左下と右上の直角枠線（L字） */
+        linear-gradient(to right, var(--c) var(--bw), transparent var(--bw)) bottom left / var(--cut) var(--cut) no-repeat,
+        linear-gradient(to top, var(--c) var(--bw), transparent var(--bw)) bottom left / var(--cut) var(--cut) no-repeat,
+        linear-gradient(to left, var(--c) var(--bw), transparent var(--bw)) top right / var(--cut) var(--cut) no-repeat,
+        linear-gradient(to bottom, var(--c) var(--bw), transparent var(--bw)) top right / var(--cut) var(--cut) no-repeat,
+
+        /* 4. 上下左右の直線枠線（四隅の var(--cut) 分を空けて引く） */
+        linear-gradient(to right, var(--c), var(--c)) top center / calc(100% - var(--cut)*2) var(--bw) no-repeat,
+        linear-gradient(to right, var(--c), var(--c)) bottom center / calc(100% - var(--cut)*2) var(--bw) no-repeat,
+        linear-gradient(to bottom, var(--c), var(--c)) left center / var(--bw) calc(100% - var(--cut)*2) no-repeat,
+        linear-gradient(to bottom, var(--c), var(--c)) right center / var(--bw) calc(100% - var(--cut)*2) no-repeat,
+        
+        /* 5. 全体の半透明背景（左右半分ずつ描画し、左上と右下だけカットする） */
+        linear-gradient(135deg, transparent var(--cut), var(--bg) var(--cut)) top left / 50% 100% no-repeat,
+        linear-gradient(-45deg, transparent var(--cut), var(--bg) var(--cut)) bottom right / 50% 100% no-repeat;
+        
+    background-color: transparent;
+}
+
+button:hover { 
+    transform: scale(1.05); 
+    --bg: rgba(0, 204, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 204, 255, 0.6); 
+}
+
+/* --- 色違いのクラス（赤） --- */
+.btn-red {
+    --c: #ff3366;
+    --bg: rgba(255, 51, 102, 0.15);
+}
+.btn-red:hover { 
+    --bg: rgba(255, 51, 102, 0.3); 
+    box-shadow: 0 0 15px rgba(255, 51, 102, 0.6); 
+}
+
+/* --- 色違いのクラス（グレー） --- */
+.btn-gray {
+    --c: #888888;
+    --bg: rgba(102, 102, 102, 0.2);
+    color: #cccccc;
+}
+.btn-gray:hover { 
+    --bg: rgba(102, 102, 102, 0.4); 
+    box-shadow: 0 0 15px rgba(102, 102, 102, 0.6); 
+}
+
+/* 無効化時 */
+button:disabled { 
+    --c: #555555;
+    --bg: rgba(85, 85, 85, 0.1);
+    color: #777777; 
+    cursor: not-allowed; 
+}
+button:disabled:hover { 
+    transform: none; 
+    box-shadow: none; 
+    --bg: rgba(85, 85, 85, 0.1);
+}
 /* ショップリストのスクロール対応 */
 #shopList {
     overflow-y: auto;

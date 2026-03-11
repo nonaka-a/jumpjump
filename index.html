@@ -44,8 +44,7 @@
         <div class="stat-text"><span data-i18n="highScore">HIGH SCORE:</span> <span id="titleHigh">0</span> m</div>
         <div class="stat-text gp-text"><span data-i18n="totalGp">TOTAL GP:</span> <span id="titleGp">0</span></div>
         <div class="btn-group-vertical">
-            <button onclick="changeState('play')" style="background: #ff3366; color: white;"
-                data-i18n="jumpStart">JUMP (START)</button>
+            <button class="btn-red" onclick="changeState('play')" data-i18n="jumpStart">JUMP (START)</button>
             <button onclick="changeState('shop')" data-i18n="shop">SHOP</button>
             <button onclick="changeState('settings')" data-i18n="settings">SETTINGS</button>
             <button id="langToggleBtn" onclick="toggleLanguage()">LANGUAGE: ENGLISH</button>
@@ -60,8 +59,7 @@
 
             <div class="btn-group-vertical" style="margin-top: 20px;">
                 <button id="soundToggleBtn" onclick="toggleSound()">SOUND: ON</button>
-                <button onclick="confirmReset()" style="background: #666; color: #fff;" data-i18n="resetData">RESET
-                    DATA</button>
+                <button class="btn-gray" onclick="confirmReset()" data-i18n="resetData">RESET DATA</button>
                 <button onclick="changeState('title')" style="margin-top: 20px;" data-i18n="backToTitle">BACK TO
                     TITLE</button>
             </div>
@@ -91,8 +89,7 @@
             <div class="stat-text gp-text"><span data-i18n="earnedGp">Earned GP:</span> +<span
                     id="resultEarned">0</span></div>
             <div class="btn-group-vertical">
-                <button onclick="changeState('play')" style="background: #ff3366; color: white;"
-                    data-i18n="retry">RETRY</button>
+                <button class="btn-red" onclick="changeState('play')" data-i18n="retry">RETRY</button>
                 <button onclick="changeState('title')" data-i18n="titleBtn">TITLE</button>
             </div>
         </div>

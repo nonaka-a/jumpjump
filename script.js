@@ -173,7 +173,12 @@ function updateSettingsUI() {
         let soundState = saveData.soundEnabled ? 'ON' : 'OFF';
         if (saveData.language === 'ja') soundState = saveData.soundEnabled ? 'オン' : 'オフ';
         btn.textContent = saveData.language === 'ja' ? `サウンド: ${soundState}` : `SOUND: ${soundState}`;
-        btn.style.background = saveData.soundEnabled ? '#00ccff' : '#555';
+        if (saveData.soundEnabled) {
+            btn.classList.remove('btn-gray');
+        } else {
+            btn.classList.add('btn-gray');
+        }
+        btn.style.background = ""; // 万が一残っていたインラインスタイルをリセット
     }
 }
 

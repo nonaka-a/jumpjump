@@ -102,7 +102,12 @@ function changeState(state) {
         document.getElementById('settingsScreen').style.display = 'flex';
         updateSettingsUI();
     } else if (state === 'play') {
-        playBGM('bgm');
+        // bgm と bgm_b を交互に選択
+        const bgmToPlay = currentBgmSelectionIndex === 0 ? 'bgm' : 'bgm_b';
+        playBGM(bgmToPlay);
+        // 次回のプレイのためにインデックスを切り替え
+        currentBgmSelectionIndex = (currentBgmSelectionIndex + 1) % 2;
+
         document.getElementById('gameUI').style.display = 'block';
         initGame();
     } else if (state === 'ending') {
@@ -177,14 +182,17 @@ function updateShopUI() {
         const name = lang === 'ja' ? (info.nameJa || info.name) : info.name;
         const buyText = lang === 'ja' ? '購入: ' : 'Buy: ';
         const maxText = lang === 'ja' ? '最大' : 'MAX';
+        
+        // 言語に応じて説明文を選択
+        const descList = lang === 'ja' ? info.descsJa : info.descsEn;
+        const desc = descList[lv];
 
         const itemEl = document.createElement('div');
         itemEl.className = 'shop-item';
-        // button class から btn-red を削除し、デフォルトのサイバーブルーに戻す
         itemEl.innerHTML = `
             <div class="shop-info">
                 <div class="shop-title">${name} [Lv ${lv}]</div>
-                <div class="shop-desc">${info.descs[lv]}</div>
+                <div class="shop-desc">${desc}</div>
             </div>
             <button class="shop-btn" ${isMax || saveData.gp < cost ? 'disabled' : ''} onclick="buyUpgrade('${key}')">
                 ${isMax ? maxText : buyText + cost}
@@ -383,11 +391,14 @@ function stopBGM() {
     currentBgmName = "";
 }
 
+let currentBgmSelectionIndex = 0; // 交互再生用のインデックス
+
 loadSound('jump', 'jump2.mp3');
 loadSound('energy', 'energy.mp3');
 loadSound('bgm', 'BGM.mp3');
+loadSound('bgm_b', 'BGM_B.mp3'); // BGM_Bを追加
 loadSound('bgm2', 'BGM2.mp3');
-loadSound('bgm_end', 'BGM_end.mp3'); // 追加：エンディング用BGM
+loadSound('bgm_end', 'BGM_end.mp3');
 loadSound('dest1', 'block_destruction1.mp3');
 loadSound('dest2', 'block_destruction2.mp3');
 loadSound('flameburst', 'Flames_burst.mp3');
@@ -748,8 +759,27 @@ function update() {
                         particles.push(new Particle(cx, cy, c, (Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12, 0.03, Math.random() * 4 + 2));
                     }
                     if (pLv >= 6 && !yellowGiantJumping) {
-                        ball.vy = Math.min(ball.vy, -8) - 2.5; 
-                        if (ball.vy < -22) ball.vy = -22;     
+                        const isPower = powerModeTimer > 0;
+                        
+                        // 上限をさらに制限。パワーモード中でも 26 まで（通常は 21）。
+                        // ライン反射（最大44）の速度を維持するための「補助」程度の速度に設定。
+                        const speedLimit = isPower ? -26 : -21;
+                        
+                        // 固定値加算をやめ、現在の速度を 5% 〜 8% 増加させる方式に変更。
+                        // すでに速いほど増加幅が物理的に小さくなり、上限に収束しやすくなる。
+                        const accelerationRate = isPower ? 1.08 : 1.05;
+                        
+                        if (ball.vy < -5) {
+                            // 上方向へ移動中なら現在の速度を倍率で強化
+                            ball.vy *= accelerationRate;
+                        } else {
+                            // 下落中または低速なら、最低限の初速を与える
+                            ball.vy = -10;
+                        }
+                        
+                        // 最終的な上限チェック
+                        if (ball.vy < speedLimit) ball.vy = speedLimit;     
+                        
                         for (let i = 0; i < 8; i++) {
                             particles.push(new Particle(ball.x, ball.y, '#ffffff', (Math.random() - 0.5) * 4, 3, 0.1, 2));
                         }
@@ -781,7 +811,10 @@ function update() {
 
     if (currentAlt > maxHeight && maxHeight < 10000) { 
         maxHeight = Math.min(currentAlt, 10000); document.getElementById('heightScore').textContent = maxHeight; 
-        if (maxHeight >= 5000 && currentBgmName === 'bgm') fadeToBGM('bgm2', 3.0);
+        // 5000m到達時、現在のBGMが bgm または bgm_b であれば bgm2 へフェード
+        if (maxHeight >= 5000 && (currentBgmName === 'bgm' || currentBgmName === 'bgm_b')) {
+            fadeToBGM('bgm2', 3.0);
+        }
         if (maxHeight >= 10000) playSound('energy');
     }
 

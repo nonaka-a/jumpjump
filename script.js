@@ -1128,34 +1128,18 @@ updateLanguageUI();
 changeState('title');
 
 function debugWarp() {
+    /* 
     if (!gameActive) return;
-
-    // 現在のカメラ(cameraY)とボール(ball.y)を9500m相当の位置に移動させる
-    // 高度の計算式: (canvas.height - 100 - ball.y) / 20 = altitude
-    // 逆算: ball.y = canvas.height - 100 - (altitude * 20)
-    
     const targetAlt = 9500;
     const targetY = canvas.height - 100 - (targetAlt * 20);
-
     ball.y = targetY;
-    ball.vy = 0; // 落下速度をリセットして操作しやすくする
-    
-    // カメラも即座にボールに追従させる
+    ball.vy = 0;
     cameraY = ball.y - canvas.height * 0.5;
-
-    // 進行状況に関連する変数を9500m相当に更新
     maxHeight = targetAlt;
     document.getElementById('heightScore').textContent = maxHeight;
-    
-    // ブースターやブロックの生成位置を現在地にリセット
     nextGateAlt = 10000; 
     nextSingleBoosterY = cameraY - 300;
     nextBlockY = cameraY - 800;
-
-    // 画面に残っている不要なオブジェクトを消去
-    lines = [];
-    boosters = [];
-    items = [];
-    blocks = [];
-    yellowItems = [];
+    lines = []; boosters = []; items = []; blocks = []; yellowItems = [];
+    */
 }

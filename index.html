@@ -38,9 +38,18 @@
     </div>
 </div>
 
+    <!-- チュートリアルUI -->
+    <div id="tutorialUI">
+        <button id="tutorialSkipBtn" onclick="changeState('title')" data-i18n="tutorialSkip">SKIP</button>
+        <div id="tutorialOverlay">
+            <div id="tutorialText"></div>
+            <div id="tutorialAids"></div>
+        </div>
+    </div>
+
    <!-- タイトル画面画面 -->
     <div id="titleScreen" class="screen">
-        <img src="logo.png" alt="MAIMAI JUMP JUMP!" class="title-logo">
+        <img src="assets/images/logo.png" alt="MAIMAI JUMP JUMP!" class="title-logo">
         <div class="screen-box">
             <div class="corner-tl"></div><div class="corner-tr"></div>
             <div class="corner-bl"></div><div class="corner-br"></div>
@@ -51,6 +60,7 @@
                 <div class="stat-text gp-text"><span data-i18n="totalGp">TOTAL GP:</span> <span id="titleGp">0</span></div>
             </div>
             <div class="btn-group-vertical">
+                <button onclick="changeState('tutorial')" data-i18n="tutorial">TUTORIAL (チュートリアル)</button>
                 <button class="btn-red" onclick="changeState('play')" data-i18n="jumpStart">JUMP (START)</button>
                 <button onclick="changeState('shop')" data-i18n="shop">SHOP</button>
                 <button onclick="changeState('settings')" data-i18n="settings">SETTINGS</button>
@@ -95,7 +105,7 @@
         </div>
     </div>
 
-<div id="endingScreen" class="screen" style="display: none; background: url('end_BG.jpg') no-repeat center center; background-size: cover;">
+<div id="endingScreen" class="screen" style="display: none; background: url('assets/images/end_BG.jpg') no-repeat center center; background-size: cover;">
     <div id="whiteFadeOverlay"></div> <!-- 白い幕 -->
     <div id="endingTextContainer"></div>
 </div>

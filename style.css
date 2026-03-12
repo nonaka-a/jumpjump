@@ -90,7 +90,7 @@ canvas {
 }
 
 #titleScreen, #shopScreen, #settingsScreen {
-    background: url('BG.jpg') no-repeat center top; /* .png から .jpg へ変更 */
+    background: url('assets/images/BG.jpg') no-repeat center top; /* .png から .jpg へ変更 */
     background-size: cover;
     position: relative;
 }
@@ -333,6 +333,105 @@ button:disabled:hover { transform: none; box-shadow: none; --bg: rgba(85, 85, 85
     /* 長い文章（英語など）が画面幅で自動的に折り返されるようにする */
     white-space: pre-wrap;
     word-break: break-word;
-    /* 空行（""）の場合でも、1行分の高さを確保して空間をあける */
+    /* 空行（""）の場合でも、1行分の高さを確保して空間あける */
     min-height: 2rem;
+}
+
+/* チュートリアルUI */
+#tutorialUI {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+}
+
+#tutorialSkipBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    pointer-events: auto;
+    padding: 8px 15px;
+    font-size: 14px;
+    --cut: 8px;
+    --tri: 7px;
+}
+
+#tutorialOverlay {
+    position: absolute;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
+    text-align: center;
+}
+
+#tutorialText {
+    font-size: 20px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 10px #00ccff, 0 0 20px #00ccff;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px 20px;
+    border-top: 2px solid #00ccff;
+    border-bottom: 2px solid #00ccff;
+    margin-bottom: 20px;
+}
+
+@keyframes pulseText {
+    0%, 100% { opacity: 0.9; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.02); }
+}
+
+#tutorialAids {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+}
+
+.tutorial-aid-box {
+    background: rgba(0, 204, 255, 0.1);
+    border: 1px solid rgba(0, 204, 255, 0.5);
+    padding: 10px;
+    border-radius: 5px;
+    color: #00ccff;
+    font-weight: bold;
+}
+
+.arrow-up {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 20px solid #00ccff;
+    margin-bottom: 5px;
+}
+
+.arrow-up.small {
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 10px solid #00ccff;
+}
+
+/* チュートリアル用のアイコンポップアップ演出 */
+.tutorial-icon-pop {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0.8;
+    animation: iconPop 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes iconPop {
+    0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+    50% { transform: scale(1.2) rotate(10deg); opacity: 0.8; }
+    100% { transform: scale(1) rotate(0deg); opacity: 0.6; }
 }

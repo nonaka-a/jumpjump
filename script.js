@@ -79,9 +79,11 @@ function changeState(state) {
     
     const endingScreen = document.getElementById('endingScreen');
     if (endingScreen) endingScreen.style.display = 'none';
+    document.getElementById('tutorialUI').style.display = 'none';
 
     gameActive = false;
     endingActive = false;
+    isTutorial = false;
 
     if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume();
@@ -110,6 +112,10 @@ function changeState(state) {
 
         document.getElementById('gameUI').style.display = 'block';
         initGame();
+    } else if (state === 'tutorial') {
+        document.getElementById('gameUI').style.display = 'none'; // チュートリアルでは高度などのUIを非表示
+        document.getElementById('tutorialUI').style.display = 'block';
+        initTutorial();
     } else if (state === 'ending') {
         startEnding();
     } else if (state === 'result') {
@@ -271,8 +277,8 @@ function resetData() {
 }
 
 // --- 画像・音声 ---
-const ballImage = new Image(); ballImage.src = 'maimai.png';
-const bgImage = new Image(); bgImage.src = 'BG.jpg';
+const ballImage = new Image(); ballImage.src = 'assets/images/maimai.png';
+const bgImage = new Image(); bgImage.src = 'assets/images/BG.jpg';
 let ballImageLoaded = false;
 let bgImageLoaded = false;
 ballImage.onload = () => { ballImageLoaded = true; };
@@ -302,9 +308,9 @@ function playSound(name, volume = 1.0) {
     if (!soundBuffers[name]) {
         if(!fallbackAudios[name]) {
             const urlMap = {
-                'jump': 'jump2.mp3', 'energy': 'energy.mp3',
-                'dest1': 'block_destruction1.mp3', 'dest2': 'block_destruction2.mp3',
-                'flameburst': 'Flames_burst.mp3'
+                'jump': 'assets/sounds/jump2.mp3', 'energy': 'assets/sounds/energy.mp3',
+                'dest1': 'assets/sounds/block_destruction1.mp3', 'dest2': 'assets/sounds/block_destruction2.mp3',
+                'flameburst': 'assets/sounds/Flames_burst.mp3'
             };
             if(urlMap[name]) fallbackAudios[name] = new Audio(urlMap[name]);
         }
@@ -393,15 +399,15 @@ function stopBGM() {
 
 let currentBgmSelectionIndex = 0; // 交互再生用のインデックス
 
-loadSound('jump', 'jump2.mp3');
-loadSound('energy', 'energy.mp3');
-loadSound('bgm', 'BGM.mp3');
-loadSound('bgm_b', 'BGM_B.mp3'); // BGM_Bを追加
-loadSound('bgm2', 'BGM2.mp3');
-loadSound('bgm_end', 'BGM_end.mp3');
-loadSound('dest1', 'block_destruction1.mp3');
-loadSound('dest2', 'block_destruction2.mp3');
-loadSound('flameburst', 'Flames_burst.mp3');
+loadSound('jump', 'assets/sounds/jump2.mp3');
+loadSound('energy', 'assets/sounds/energy.mp3');
+loadSound('bgm', 'assets/sounds/BGM.mp3');
+loadSound('bgm_b', 'assets/sounds/BGM_B.mp3'); // BGM_Bを追加
+loadSound('bgm2', 'assets/sounds/BGM2.mp3');
+loadSound('bgm_end', 'assets/sounds/BGM_end.mp3');
+loadSound('dest1', 'assets/sounds/block_destruction1.mp3');
+loadSound('dest2', 'assets/sounds/block_destruction2.mp3');
+loadSound('flameburst', 'assets/sounds/Flames_burst.mp3');
 
 // --- ゲームロジック ---
 let PLAY_X = 0;
@@ -430,6 +436,7 @@ class Particle {
 }
 
 let ball, lines, boosters, items, blocks, particles, speedLines, lasers, ghosts, ghostTimer;
+let isTutorial = false, tutorialStep = 1, tutorialSubStep = 1, tutorialTimer = 0, tutorialBounceCount = 0;
 let isDrawing, startPoint, currentPoint, maxHeight, gameActive, cameraY;
 let boostEffectTimer, powerModeTimer, nextGateAlt, nextBlockY, nextSingleBoosterY, currentSheetCount;
 let fadeToWhite = 0;
@@ -485,6 +492,57 @@ function initGame() {
     requestAnimationFrame(gameLoop);
 }
 
+function initTutorial() {
+    initGame(); // 基本的なオブジェクトと配列の初期化を行う
+    isTutorial = true;
+    tutorialStep = 1;
+    tutorialSubStep = 1;
+    tutorialTimer = 0;
+    tutorialBounceCount = 0;
+    
+    resetTutorialMaimai(250, 1.5);
+    cameraY = 0;
+    currentSheetCount = 0;
+    
+    updateTutorialUI();
+}
+
+function resetTutorialMaimai(y = 50, vy = 1.5) {
+    ball.x = canvas.width / 2;
+    ball.y = y;
+    ball.vy = vy;
+    ball.vx = 0;
+    ball.angle = 0;
+    ball.va = 0;
+    ball.firstFall = false;
+    tutorialBounceCount = 0;
+    tutorialHasBounced = false; // 反射フラグをリセット
+}
+
+function updateTutorialUI() {
+    const lang = saveData.language || 'en';
+    const textEl = document.getElementById('tutorialText');
+    const aidEl = document.getElementById('tutorialAids');
+    
+    aidEl.innerHTML = '';
+    
+    if (tutorialStep === 1) {
+        textEl.innerHTML = I18N.tutorialStep1[lang];
+    } else if (tutorialStep === 2) {
+        if (tutorialSubStep === 1) {
+            textEl.textContent = I18N.tutorialStep2Long[lang];
+        } else {
+            textEl.textContent = I18N.tutorialStep2Short[lang];
+        }
+        aidEl.innerHTML = ''; // HIGH/SOFT表記を削除
+    } else if (tutorialStep === 3) {
+        textEl.textContent = I18N.tutorialStep3[lang];
+        aidEl.innerHTML = ''; 
+    } else if (tutorialStep === 4) {
+        textEl.textContent = I18N.tutorialClear[lang];
+    }
+}
+
 function spawnBooster(yTarget, isGate = false) {
     if (isGate) {
         const num = 5; const gateWidth = 60; const spacing = PLAY_W / (num + 1);
@@ -530,19 +588,37 @@ function getPos(e) {
     return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY + cameraY };
 }
 
-canvas.addEventListener('mousedown', (e) => { if (gameActive) { isDrawing = true; startPoint = getPos(e); } });
-window.addEventListener('mousemove', (e) => { if (isDrawing) { if (e.cancelable) e.preventDefault(); currentPoint = getPos(e); } });
+canvas.addEventListener('mousedown', (e) => { 
+    if (gameActive && (!isTutorial || tutorialStep === 1)) { 
+        isDrawing = true; startPoint = getPos(e); 
+    } 
+});
+window.addEventListener('mousemove', (e) => { 
+    if (isDrawing && (!isTutorial || tutorialStep === 1)) { 
+        if (e.cancelable) e.preventDefault(); 
+        currentPoint = getPos(e); 
+    } 
+});
 window.addEventListener('mouseup', () => {
-    if (isDrawing && startPoint && currentPoint) {
+    if (isDrawing && startPoint && currentPoint && (!isTutorial || tutorialStep === 1)) { 
         const dx = currentPoint.x - startPoint.x, dy = currentPoint.y - startPoint.y, len = Math.sqrt(dx * dx + dy * dy);
         if (len > 5) lines.push({ x1: startPoint.x, y1: startPoint.y, x2: currentPoint.x, y2: currentPoint.y, length: len });
     }
     isDrawing = false; startPoint = null; currentPoint = null;
 });
-canvas.addEventListener('touchstart', (e) => { if (gameActive) { isDrawing = true; startPoint = getPos(e); } }, { passive: false });
-window.addEventListener('touchmove', (e) => { if (isDrawing) { if (e.cancelable) e.preventDefault(); currentPoint = getPos(e); } }, { passive: false });
+canvas.addEventListener('touchstart', (e) => { 
+    if (gameActive && (!isTutorial || tutorialStep === 1)) { 
+        isDrawing = true; startPoint = getPos(e); 
+    } 
+}, { passive: false });
+window.addEventListener('touchmove', (e) => { 
+    if (isDrawing && (!isTutorial || tutorialStep === 1)) { 
+        if (e.cancelable) e.preventDefault(); 
+        currentPoint = getPos(e); 
+    } 
+}, { passive: false });
 window.addEventListener('touchend', () => {
-    if (isDrawing && startPoint && currentPoint) {
+    if (isDrawing && startPoint && currentPoint && (!isTutorial || tutorialStep === 1)) { 
         const dx = currentPoint.x - startPoint.x, dy = currentPoint.y - startPoint.y, len = Math.sqrt(dx * dx + dy * dy);
         if (len > 5) lines.push({ x1: startPoint.x, y1: startPoint.y, x2: currentPoint.x, y2: currentPoint.y, length: len });
     }
@@ -606,11 +682,155 @@ function update() {
         speedLines.forEach((sl, idx) => { sl.y += sl.v; });
         speedLines = speedLines.filter(sl => sl.y <= canvas.height);
 
-        if (ball.y > cameraY + canvas.height + 50 && fadeToWhite === 0) changeState('result');
+        if (ball.y > cameraY + canvas.height + 50 && fadeToWhite === 0 && !isTutorial) changeState('result');
         return; 
     }
+    
+    let grav = ball.firstFall ? config.gravity * 0.4 : config.gravity;
+    
+    // チュートリアル固有の重力制御
+    if (isTutorial) {
+        if (tutorialStep === 1) {
+            grav = config.gravity / 10;
+            if (ball.vy > 0) { ball.vy = 1.5; grav = 0; }
+            
+            if (tutorialBounceCount > 0) {
+                tutorialTimer++;
+                if (tutorialTimer > 60) { // 反射後、約1秒待機してからステップ2へ
+                    tutorialStep = 2;
+                    tutorialSubStep = 1;
+                    tutorialTimer = 0;
+                    resetTutorialMaimai(50, 3.5); // ステップ2開始 (少し早めに落下)
+                    updateTutorialUI();
+                }
+            }
+            if (ball.y > 800 && tutorialBounceCount === 0) { resetTutorialMaimai(50, 1.5); return; }
+        } else if (tutorialStep === 2) {
+            if (tutorialBounceCount === 0 && tutorialTimer < 60) {
+                tutorialTimer++;
+                // 最初の1秒間はテキストを読ませるために待機
+                ball.y = 80;
+                ball.vy = 0;
+                grav = 0;
+                return;
+            }
+            
+            grav = config.gravity; 
+            
+            const guideY = 750;
+            const drawStartAlt = guideY - 650;
+            const drawEndAlt = guideY - 350;
+            
+            // ままいが特定の位置にきたら、線を引き始める
+            if (tutorialBounceCount === 0 && ball.vy > 0 && ball.y > drawStartAlt) {
+                const maxWidth = (tutorialSubStep === 1) ? 380 : 40;
+                // インパクトのかなり前に引き終わるように進行度を計算
+                const progress = Math.min(1, (ball.y - drawStartAlt) / (drawEndAlt - drawStartAlt));
+                const currentWidth = maxWidth * progress;
+                
+                if (ball.y < guideY) {
+                    isDrawing = true;
+                    startPoint = { x: canvas.width / 2 - maxWidth / 2, y: guideY };
+                    currentPoint = { x: canvas.width / 2 - maxWidth / 2 + currentWidth, y: guideY };
+                }
 
-    const grav = ball.firstFall ? config.gravity * 0.4 : config.gravity;
+                // ガイド位置（impact）に達した瞬間、または既に引き終わっている状態で確定
+                if (ball.y + ball.vy >= guideY) {
+                    isDrawing = false;
+                    const finalX2 = startPoint.x + maxWidth;
+                    lines.push({ 
+                        x1: startPoint.x, y1: guideY, 
+                        x2: finalX2, y2: guideY, 
+                        length: maxWidth 
+                    });
+                    ball.y = guideY - config.ballRadius;
+                    startPoint = null;
+                    currentPoint = null;
+                }
+            }
+
+
+            if (tutorialSubStep === 1) {
+                if (tutorialBounceCount > 0) {
+                    if (!tutorialHasBounced) {
+                        tutorialTimer = 0; // 反射した瞬間にタイマーを0から開始
+                        tutorialHasBounced = true;
+                    }
+                    tutorialTimer++;
+                    if (tutorialTimer > 120) { // 弱いジャンプを2秒見せる
+                        tutorialSubStep = 2;
+                        tutorialTimer = 0;
+                        resetTutorialMaimai(80, 3.5);
+                        updateTutorialUI();
+                    }
+                }
+                if (ball.y > 850 && tutorialBounceCount === 0) { 
+                    resetTutorialMaimai(80, 3.5); 
+                    tutorialTimer = 0; 
+                    return; 
+                }
+            } else if (tutorialSubStep === 2) {
+                if (tutorialBounceCount > 0) {
+                    if (!tutorialHasBounced) {
+                        tutorialTimer = 0; // 反射した瞬間にタイマーを0から開始
+                        tutorialHasBounced = true;
+                    }
+                    tutorialTimer++;
+                    if (tutorialTimer > 180) { // 強いジャンプを3秒見せる
+                        tutorialStep = 3;
+                        tutorialTimer = 0;
+                        updateTutorialUI();
+                    }
+                }
+                if (ball.y > 850 && tutorialBounceCount === 0) { resetTutorialMaimai(50, 3.5); return; }
+            }
+        } else if (tutorialStep === 3) {
+            // ステップ3: アイテム紹介デモ
+            if (tutorialTimer === 0) {
+                resetTutorialMaimai(450, 0); // テキストと被らないよう低めの位置で待機
+                lines = []; // 前のステップの線を消す
+                // 実際のアイテムオブジェクトを配置
+                items = [{ x: canvas.width / 2 - 120, y: 650, radius: 35, active: true }];
+                yellowItems = [{ x: canvas.width / 2 + 120, y: 650, radius: 30, active: true }];
+                boosters = [{ x: canvas.width / 2 - 40, y: 780, w: 80, h: 60, active: true, isGate: false }];
+            }
+            tutorialTimer++;
+            
+            if (tutorialTimer <= 300) {
+                // 約5秒間、展示中にふわふわさせる
+                ball.y = 450 + Math.sin(tutorialTimer / 30) * 15;
+                ball.vy = 0;
+                grav = 0;
+            } else {
+                // 落下してブースターで飛び去る演出
+                grav = config.gravity; 
+                // ままいが画面外（上空）へ消えたらクリア
+                if (ball.y < -100 && ball.vy < 0) {
+                    tutorialStep = 4;
+                    tutorialTimer = 0;
+                    updateTutorialUI();
+                }
+                // 画面外（下）へ落ちすぎないよう保険
+                if (ball.y > 900) {
+                    resetTutorialMaimai(450, 0);
+                    tutorialTimer = 250; 
+                }
+            }
+        } else if (tutorialStep === 4) {
+            tutorialTimer++;
+            if (tutorialTimer > 120) {
+                changeState('title');
+            }
+        }
+    }
+
+    if (isTutorial && tutorialStep === 1) {
+        if (ball.vy > 0) {
+            ball.vy = 1.5;
+            grav = 0;
+        }
+    }
+
     ball.vy += grav; ball.x += ball.vx; ball.y += ball.vy;
     if (ball.vy < 0) ball.firstFall = false;
     ball.angle += ball.va; ball.va *= config.rotationDamping; ball.va += ball.vx * config.moveRotationFactor;
@@ -621,7 +841,7 @@ function update() {
     }
 
     const targetY = ball.y - canvas.height * 0.5;
-    if (targetY < cameraY) cameraY += (targetY - cameraY) * config.cameraLerp;
+    if (targetY < cameraY && !isTutorial) cameraY += (targetY - cameraY) * config.cameraLerp;
 
     const currentAlt = Math.floor(Math.max(0, (canvas.height - 100 - ball.y) / 20));
     const spawnY = cameraY - 400;
@@ -629,21 +849,21 @@ function update() {
 
     if (currentAlt >= nextGateAlt && spawnActive) { spawnBooster(ball.y - 450, true); nextGateAlt = (nextGateAlt === 500) ? 1000 : nextGateAlt + 1000; }
     
-    const bLv = saveData.upgrades.booster;
+    const bLv = isTutorial ? 0 : saveData.upgrades.booster;
     if (bLv > 0 && cameraY < nextSingleBoosterY && spawnActive) {
         const prob = (bLv === 2) ? 0.9 : 0.6;
         if (Math.random() < prob) spawnBooster(nextSingleBoosterY - 200, false);
         nextSingleBoosterY -= (bLv === 2 ? 600 : 1000);
     }
 
-    const aLv = saveData.upgrades.aura;
+    const aLv = isTutorial ? 0 : saveData.upgrades.aura;
     if (aLv > 0 && spawnActive) {
         const appearAlt = (aLv >= 2) ? 500 : 1000;
         const prob = (aLv >= 2) ? 0.005 : 0.0015;
         if (currentAlt >= appearAlt && Math.random() < prob) spawnItem(spawnY);
     }
 
-    const ygLv = saveData.upgrades.yellowGiant;
+    const ygLv = isTutorial ? 0 : saveData.upgrades.yellowGiant;
     if (ygLv > 0 && spawnActive && !yellowGiantMode) {
         if (Math.random() < 0.0003) spawnYellowItem(spawnY);
     }
@@ -673,15 +893,15 @@ function update() {
         giantUI.classList.remove('active');
     }
 
-    if (ball.vy < -config.speedLineThreshold && Math.random() > 0.3) {
+    if (ball.vy < -config.speedLineThreshold && Math.random() > 0.3 && !isTutorial) {
         speedLines.push({ x: PLAY_X + Math.random() * PLAY_W, y: -50, h: 60 + Math.random() * 100, v: 20 + Math.random() * 15 });
     }
     speedLines.forEach((sl, i) => { sl.y += sl.v; if (sl.y > canvas.height) speedLines.splice(i, 1); });
 
     boosters.forEach(b => {
         if (b.active && ball.x > b.x && ball.x < b.x + b.w && ball.y > b.y && ball.y < b.y + b.h) {
-            const bLv = saveData.upgrades.booster;
-            const power = bLv === 3 ? config.boostPower - 6 : config.boostPower;
+            const bLv = isTutorial ? 0 : saveData.upgrades.booster;
+            const power = (isTutorial && tutorialStep === 3) ? -35 : (bLv === 3 ? config.boostPower - 6 : config.boostPower);
             ball.vy = power; boostEffectTimer = 25;
             for (let i = 0; i < (bLv === 3 ? 60 : 25); i++) {
                 let color = '#00ffff';
@@ -719,7 +939,7 @@ function update() {
         for (let i = 0; i < 30; i++) particles.push(new Particle(ball.x, ball.y, '#00ccff', (Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, 0.04, 4));
     }
 
-    const pLv = saveData.upgrades.pierce;
+    const pLv = isTutorial ? 0 : saveData.upgrades.pierce;
     blocks.forEach(bk => {
         if (bk.active) {
             const cx = Math.max(bk.x, Math.min(ball.x, bk.x + bk.w)), cy = Math.max(bk.y, Math.min(ball.y, bk.y + bk.h)), dist = Math.sqrt((ball.x - cx) ** 2 + (ball.y - cy) ** 2);
@@ -826,7 +1046,7 @@ function update() {
         }
     }
 
-    if (ball.y > cameraY + canvas.height + 50 && fadeToWhite === 0) changeState('result');
+    if (ball.y > cameraY + canvas.height + 50 && fadeToWhite === 0 && !isTutorial) changeState('result');
 
     for (let i = lines.length - 1; i >= 0; i--) {
         if (checkCollision(ball, lines[i])) {
@@ -841,6 +1061,7 @@ function update() {
                 }
             } else {
                 reflectBall(ball, lines[i]); 
+                if (isTutorial && (tutorialStep === 1 || tutorialStep === 2)) tutorialBounceCount++;
                 lines.splice(i, 1);
                 playSound(powerModeTimer > 0 ? 'flameburst' : 'jump');
                 if (powerModeTimer > 0) for (let j = 0; j < 25; j++) particles.push(new Particle(ball.x, ball.y, '#ff0000', (Math.random() - 0.5) * 15, (Math.random() - 0.5) * 15, 0.04, 3));
@@ -853,7 +1074,7 @@ function update() {
     blocks = blocks.filter(bk => bk.y < cameraY + canvas.height + 100 && bk.active);
 
     for (let i = lasers.length - 1; i >= 0; i--) { lasers[i].life -= 0.025; if (lasers[i].life <= 0) lasers.splice(i, 1); }
-    if (ghostTimer > 0) { ghostTimer--; if (ghostTimer % 3 === 0) ghosts.push({ x: ball.x, y: ball.y, life: 0.5, angle: ball.angle, spd: Math.sqrt(ball.vx ** 2 + ball.vy ** 2), vx: ball.vx, vy: ball.vy }); }
+    if (ghostTimer > 0 && !isTutorial) { ghostTimer--; if (ghostTimer % 3 === 0) ghosts.push({ x: ball.x, y: ball.y, life: 0.5, angle: ball.angle, spd: Math.sqrt(ball.vx ** 2 + ball.vy ** 2), vx: ball.vx, vy: ball.vy }); }
     for (let i = ghosts.length - 1; i >= 0; i--) { ghosts[i].life -= 0.02; if (ghosts[i].life <= 0) ghosts.splice(i, 1); }
 }
 
@@ -869,10 +1090,18 @@ function reflectBall(ball, line) {
     let nx = -dy, ny = dx; const mag = Math.sqrt(nx * nx + ny * ny); nx /= mag; ny /= mag;
     if (ny > 0) { nx *= -1; ny *= -1; }
     const dot = ball.vx * nx + ball.vy * ny;
-    const jLv = saveData.upgrades.jump;
+    const jLv = isTutorial ? 0 : saveData.upgrades.jump;
     const jumpBonus = (jLv === 3) ? 1.8 : (jLv === 2 ? 1.5 : (jLv === 1 ? 1.2 : 1.0));
     let mul = config.powerMultiplier * (powerModeTimer > 0 ? 3.0 : jumpBonus);
-    const pwr = Math.min(config.baseBounce + (mul / (Math.sqrt(dx*dx+dy*dy) * 0.1)), config.maxSpeed * (powerModeTimer > 0 ? 2.2 : 1.0));
+    
+    // チュートリアル・ステップ2のための強弱差の明示的反映
+    if (isTutorial && tutorialStep === 2) {
+        if (tutorialSubStep === 1) mul *= 0.15; // 長い線の時は大幅に弱める
+        else mul *= 2.0; // 短い線の時は強調して強める
+    }
+    
+    const pwrCap = config.maxSpeed * (powerModeTimer > 0 ? 2.2 : 1.0);
+    const pwr = Math.min(config.baseBounce + (mul / (Math.sqrt(dx*dx+dy*dy) * 0.1)), pwrCap);
     ball.vx = (ball.vx - 2 * dot * nx) * 0.8; ball.vy = (ball.vy - 2 * dot * ny);
     const v = Math.sqrt(ball.vx**2 + ball.vy**2); ball.vx = (ball.vx / v) * pwr; ball.vy = (ball.vy / v) * pwr;
     ball.va = (ball.vx * Math.cos(Math.atan2(dy, dx))) * config.bounceRotationFactor; ball.y -= 10;
@@ -1070,7 +1299,43 @@ function draw() {
         ctx.shadowBlur = 0; 
     });
 
-    if (isDrawing && startPoint && currentPoint) { ctx.strokeStyle = '#ffffff'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(startPoint.x, startPoint.y); ctx.lineTo(currentPoint.x, currentPoint.y); ctx.stroke(); ctx.setLineDash([]); }
+    // チュートリアル用の点線ガイド
+    if (isTutorial) {
+        if (tutorialStep === 1) {
+            ctx.save();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.setLineDash([5, 8]);
+            ctx.globalAlpha = 0.3 + Math.abs(Math.sin(Date.now() / 300)) * 0.4;
+            const guideY = 700;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2 - 80, guideY); ctx.lineTo(canvas.width / 2 + 80, guideY);
+            ctx.stroke();
+            ctx.restore();
+        } else if (tutorialStep === 2) {
+            ctx.save();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.setLineDash([5, 8]);
+            ctx.globalAlpha = 0.3 + Math.abs(Math.sin(Date.now() / 300)) * 0.4;
+            const guideY = 750;
+            const width = (tutorialSubStep === 1) ? 220 : 50; // 長いガイドと短いガイド
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2 - width / 2, guideY); ctx.lineTo(canvas.width / 2 + width / 2, guideY);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    if (isDrawing && startPoint && currentPoint) { 
+        if (isTutorial && tutorialStep === 2) {
+            // ステップ2のデモ中は実際のラインと同じ色を出す
+            const dx = currentPoint.x - startPoint.x, dy = currentPoint.y - startPoint.y;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            const hue = Math.max(0, 180 - len * 0.5);
+            ctx.strokeStyle = `hsl(${hue}, 100%, 60%)`;
+            ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.shadowBlur = 10; ctx.shadowColor = ctx.strokeStyle;
+            ctx.beginPath(); ctx.moveTo(startPoint.x, startPoint.y); ctx.lineTo(currentPoint.x, currentPoint.y); ctx.stroke(); ctx.shadowBlur = 0;
+        } else {
+            ctx.strokeStyle = '#ffffff'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(startPoint.x, startPoint.y); ctx.lineTo(currentPoint.x, currentPoint.y); ctx.stroke(); ctx.setLineDash([]); 
+        }
+    }
 
     // ボール本体
     ctx.save(); ctx.translate(ball.x, ball.y);

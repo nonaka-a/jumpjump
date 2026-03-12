@@ -146,7 +146,14 @@ const I18N = {
     reached: { en: "Reached:", ja: "到達高度:" },
     earnedGp: { en: "Earned GP:", ja: "獲得 GP:" },
     retry: { en: "RETRY", ja: "リトライ" },
-    titleBtn: { en: "TITLE", ja: "タイトルへもどる" }
+    titleBtn: { en: "TITLE", ja: "タイトルへもどる" },
+    tutorial: { en: "TUTORIAL", ja: "チュートリアル" },
+    tutorialSkip: { en: "SKIP", ja: "スキップ" },
+    tutorialStep1: { en: "Draw a line to<br>keep Maimai jumping!", ja: "まいまいが落ちないよう<br>線を引いてジャンプさせよう" },
+    tutorialStep2Short: { en: "Short lines lead to powerful jumps", ja: "短い線を引くと、強いジャンプ" },
+    tutorialStep2Long: { en: "Long lines lead to soft jumps", ja: "長い線を引くと、弱いジャンプ" },
+    tutorialStep3: { en: "Earn GP based on altitude! Upgrade in the SHOP.", ja: "高度に応じて GP（グラビティポイント）を獲得！ショップでアップグレードしよう" },
+    tutorialClear: { en: "TUTORIAL CLEAR!", ja: "チュートリアルクリア！" }
 };
 
 
